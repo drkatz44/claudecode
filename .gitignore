@@ -1,0 +1,40 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+__pycache__/
+*.pyc
+.venv/
+vendor/
+
+# Build outputs
+dist/
+build/
+*.exe
+*.dll
+*.so
+*.dylib
+
+# IDE/Editor
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Environment
+.env
+.env.local
+*.local
+
+# Testing/Coverage
+coverage/
+.coverage
+.pytest_cache/
+.nyc_output/
+
+# Logs
+*.log
+logs/
+
+# OS
+Thumbs.db
