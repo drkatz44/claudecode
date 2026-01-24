@@ -13,8 +13,8 @@ docs/           # Cross-project documentation
 ```
 
 ## Active Projects
-<!-- Update this list as projects are added -->
-None yet.
+- **chatgpt-import** - Import/index ChatGPT exports for search and Claude context
+- **youtube-notes** - Transcribe YouTube videos and generate meeting note summaries
 
 ## Conventions
 - Each project has its own CLAUDE.md with project-specific context
