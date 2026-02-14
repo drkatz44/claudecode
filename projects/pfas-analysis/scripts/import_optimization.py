@@ -10,17 +10,22 @@ Policy: native analyte values are applied to both native and IS compounds
 """
 
 import re
+import sys
 import yaml
 from pathlib import Path
 
-# Optimization result file
-OPT_FILE = Path("/Volumes/Extreme SSD/Shimadzu/Optimization Data/20260212_140407/"
-                "OptimizeResult_PFAS 533 Optimization_20260212_1407.txt")
+# Optimization result files — processed in order (later files override earlier)
+OPT_DIR = Path("/Volumes/Extreme SSD/Shimadzu/Optimization Data")
+OPT_FILES = [
+    OPT_DIR / "20260212_140407" / "OptimizeResult_PFAS 533 Optimization_20260212_1407.txt",
+    OPT_DIR / "20260213_131609" / "OptimizeResult_PFAS 533 Optimization_20260213_1317.txt",
+]
 
 COMPOUNDS_FILE = Path(__file__).parent.parent / "data" / "methods" / "compounds.yaml"
 
 # Map optimization event IDs to compound abbreviations in compounds.yaml
 OPT_ID_TO_ABBREV = {
+    # Batch 1 (2026-02-12): PFAC-24PAR + MPFAC-24ES core compounds
     1:  "PFBA",
     2:  "MPFBA-13C4",
     3:  "PFPeA",
@@ -55,6 +60,15 @@ OPT_ID_TO_ABBREV = {
     32: "PFDoA",
     33: "PFTrDA",
     34: "PFTeDA",
+    # Batch 2 (2026-02-13): Sulfonamides + remaining PFSAs
+    35: "PFNS",
+    36: "PFDS",
+    37: "FOSA",
+    38: "N-MeFOSAA",
+    39: "N-EtFOSAA",
+    40: "M8FOSA",
+    41: "MeFOSAA-d3",
+    42: "EtFOSAA-d5",
 }
 
 # Native → IS pairing (from compounds.yaml internal_standard field)
@@ -170,9 +184,22 @@ def main():
     print("Shimadzu MRM Optimization Import")
     print("=" * 70)
 
-    # Parse optimization results
-    opt_results = parse_optimization_results(OPT_FILE)
-    print(f"\nParsed optimization results for {len(opt_results)} compounds")
+    # Accept file paths from CLI or use defaults
+    files = [Path(f) for f in sys.argv[1:]] if len(sys.argv) > 1 else OPT_FILES
+
+    # Parse optimization results from all files (later files override earlier)
+    opt_results = {}
+    for filepath in files:
+        if not filepath.exists():
+            print(f"  SKIP: {filepath} (not found)")
+            continue
+        print(f"\nParsing: {filepath.name}")
+        batch = parse_optimization_results(filepath)
+        print(f"  Found {len(batch)} compounds")
+        for abbrev, transitions in batch.items():
+            opt_results[abbrev] = transitions  # later overrides earlier
+
+    print(f"\nTotal: optimization results for {len(opt_results)} compounds")
 
     # Load compounds.yaml
     with open(COMPOUNDS_FILE) as f:
@@ -290,6 +317,18 @@ def main():
                                 f"(from {native_abbrev}, IS not in optimization)"
                             )
                             is_t["collision_energy"] = native_t["ce"]
+                        break
+                break
+
+    # Manual overrides: M3PFBS-13C3 should use PFBS CE (36), not PFPeS CE (38)
+    # Both PFBS and PFPeS share M3PFBS as IS; PFBS is the primary pairing.
+    m3pfbs = compounds_by_abbrev.get("M3PFBS-13C3")
+    if m3pfbs and "PFBS" in opt_results:
+        for pfbs_t in opt_results["PFBS"]:
+            if pfbs_t["is_quantifier"]:
+                for is_t in m3pfbs["transitions"]:
+                    if is_t["is_quantifier"]:
+                        is_t["collision_energy"] = pfbs_t["ce"]
                         break
                 break
 

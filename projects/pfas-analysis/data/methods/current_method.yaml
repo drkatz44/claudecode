@@ -3,7 +3,7 @@
 # Status: In optimization
 
 method_name: "PFAS_Shimadzu_8060_v1"
-date_modified: "2024-02"
+date_modified: "2026-02"
 status: "optimization"
 
 standards:
@@ -39,15 +39,22 @@ ms_source:
 # LC parameters (current)
 lc:
   column:
-    name: ""                 # TBD
-    dimensions: ""           # TBD
-    particle_size_um: 0
-    temperature_c: 40
+    name: "Waters Acquity BEH C18"
+    dimensions: "2.1 x 50 mm"
+    particle_size_um: 1.7
+    temperature_c: 45
   mobile_phase_a: "2 mM ammonium acetate in water"
-  mobile_phase_b: "methanol"
+  mobile_phase_b: "2 mM ammonium acetate in methanol"
   flow_rate_ml_min: 0.4
-  injection_volume_ul: 10
-  gradient: []               # TBD - to be filled after optimization
+  injection_volume_ul: 40
+  gradient:
+    - {time_min: 0.0, percent_b: 25, flow_ml_min: 0.4}
+    - {time_min: 0.5, percent_b: 25, flow_ml_min: 0.4}
+    - {time_min: 5.0, percent_b: 85, flow_ml_min: 0.4}
+    - {time_min: 5.1, percent_b: 95, flow_ml_min: 0.4}
+    - {time_min: 5.6, percent_b: 95, flow_ml_min: 0.4}
+    - {time_min: 7.0, percent_b: 95, flow_ml_min: 0.4}
+    - {time_min: 9.0, percent_b: 25, flow_ml_min: 0.4}
 
 # Autosampler (SIL-30AC)
 autosampler:
