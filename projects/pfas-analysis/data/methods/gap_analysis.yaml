@@ -1,0 +1,579 @@
+# Gap Analysis: SOP (Waters Xevo TQD) vs Shimadzu LCMS-8060 Adaptation
+# Source: SOP E-AED-PEB-SOP-1908-1, QAPP E-AED-0031514-QP-1-2
+#
+# Status values: transferred | needs_optimization | verified | not_applicable
+#
+# Each entry: parameter, sop_value, shimadzu_value, status, notes
+
+lc_parameters:
+
+  - parameter: Analytical column
+    sop_value: "Waters Acquity BEH C18, 2.1 x 50 mm, 1.7 um"
+    shimadzu_value: "Waters Acquity BEH C18, 2.1 x 50 mm, 1.7 um"
+    status: transferred
+    notes: Same column used on both systems; direct transfer
+
+  - parameter: Column temperature
+    sop_value: "45 C"
+    shimadzu_value: "45 C (CTO-20A)"
+    status: transferred
+    notes: Direct transfer; verify CTO-20A setpoint accuracy
+
+  - parameter: Mobile phase A
+    sop_value: "2 mM ammonium acetate in water"
+    shimadzu_value: "2 mM ammonium acetate in water"
+    status: transferred
+    notes: Identical preparation; use LC-MS grade water
+
+  - parameter: Mobile phase B
+    sop_value: "2 mM ammonium acetate in methanol"
+    shimadzu_value: "2 mM ammonium acetate in methanol"
+    status: transferred
+    notes: >
+      SOP labels as channel C; mapped to Shimadzu channel B.
+      Use LC-MS grade methanol.
+
+  - parameter: Flow rate
+    sop_value: "0.4 mL/min"
+    shimadzu_value: "0.4 mL/min"
+    status: transferred
+    notes: Direct transfer; LC-20AD XR pumps
+
+  - parameter: Gradient program
+    sop_value: "25% B at 0 min, hold 0.5 min, ramp to 85% B at 5.0 min, step to 95% at 5.1 min, hold to 7.0 min, re-equil to 25% at 9.0 min"
+    shimadzu_value: "Same gradient programmed in LabSolutions"
+    status: transferred
+    notes: >
+      SOP uses Waters curve 6 (linear) and curve 1 (step).
+      Shimadzu linear ramp is equivalent to curve 6.
+      Step function programmed as rapid ramp (0.1 min).
+      Total run 9.0 min.
+
+  - parameter: Injection volume
+    sop_value: "40 uL"
+    shimadzu_value: "40 uL (SIL-30AC MP)"
+    status: transferred
+    notes: Direct transfer
+
+  - parameter: Autosampler temperature
+    sop_value: "5 C"
+    shimadzu_value: "5 C (SIL-30AC MP cooler)"
+    status: transferred
+    notes: Direct transfer
+
+  - parameter: Needle wash
+    sop_value: "MeOH + 0.1% formic acid"
+    shimadzu_value: "MeOH + 0.1% formic acid"
+    status: transferred
+    notes: Before and after aspiration
+
+  - parameter: System dwell volume
+    sop_value: "~100 uL (Waters Acquity H-Class)"
+    shimadzu_value: "~150-200 uL (Nexera X2, depends on mixer)"
+    status: needs_optimization
+    notes: >
+      Larger dwell volume on Nexera X2 may cause 0.1-0.3 min RT shift
+      for early-eluting compounds. May need to adjust gradient start
+      time or reduce mixer volume. Verify with standards.
+
+ms_source_parameters:
+
+  - parameter: Ionization mode
+    sop_value: "ESI negative"
+    shimadzu_value: "ESI negative"
+    status: transferred
+    notes: Both systems use electrospray in negative mode
+
+  - parameter: Capillary / Interface voltage
+    sop_value: "1.00 kV (capillary voltage)"
+    shimadzu_value: "1.0 kV (interface voltage)"
+    status: needs_optimization
+    notes: >
+      Functionally analogous but different electrode geometry.
+      Start at 1.0 kV and optimize via FIA.
+
+  - parameter: Cone voltage / Q1 pre-bias
+    sop_value: "20-45 V compound-specific (cone voltage)"
+    shimadzu_value: "Optimize via MRM optimization (Q1 pre-rod bias)"
+    status: needs_optimization
+    notes: >
+      No direct equivalent on 8060. TQD cone voltage affects
+      in-source fragmentation and ion transmission. 8060 uses
+      Q1 pre-rod bias for similar purpose but values are not
+      transferable. Must optimize per compound.
+
+  - parameter: Source temperature
+    sop_value: "150 C (source housing)"
+    shimadzu_value: "400 C (heat block)"
+    status: needs_optimization
+    notes: >
+      Different physical meaning. TQD source temp heats the
+      source housing; 8060 heat block heats the spray. Starting
+      value 400 C; optimize for signal and stability.
+
+  - parameter: Desolvation temperature
+    sop_value: "400 C"
+    shimadzu_value: "250 C (DL temperature)"
+    status: needs_optimization
+    notes: >
+      TQD desolvation temp maps to 8060 DL (desolvation line)
+      temperature. 8060 DL runs cooler than TQD desolvation.
+      Also set interface temp = 300 C. Optimize both.
+
+  - parameter: Cone gas flow
+    sop_value: "30 L/hr"
+    shimadzu_value: "10 L/min (drying gas)"
+    status: needs_optimization
+    notes: >
+      Approximate functional analog. TQD cone gas = 30 L/hr (0.5 L/min);
+      8060 drying gas = 10 L/min. Very different flow rates due to
+      different source geometry. Optimize via FIA.
+
+  - parameter: Desolvation gas flow
+    sop_value: "800 L/hr (~13 L/min)"
+    shimadzu_value: "3 L/min (nebulizing) + 10 L/min (heating gas)"
+    status: needs_optimization
+    notes: >
+      TQD desolvation gas is split between 8060 nebulizing gas
+      and heating gas. 8060 has separate heated gas line not
+      present on TQD. Optimize both flows via FIA.
+
+  - parameter: Collision gas
+    sop_value: "Argon"
+    shimadzu_value: "Argon"
+    status: transferred
+    notes: Same collision gas on both platforms
+
+  - parameter: Interface temperature
+    sop_value: "N/A (no TQD equivalent)"
+    shimadzu_value: "300 C"
+    status: needs_optimization
+    notes: >
+      8060-specific parameter. Set between TQD source temp (150 C)
+      and desolvation temp (400 C). Optimize via FIA.
+
+  - parameter: Heating gas flow
+    sop_value: "N/A (no TQD equivalent)"
+    shimadzu_value: "10 L/min"
+    status: needs_optimization
+    notes: >
+      8060-specific heated gas that aids desolvation. No TQD equivalent.
+      Optimize via FIA.
+
+mrm_transitions:
+  # Per-compound comparison: SOP CE (TQD) vs 8060 starting CE
+  # Entries for all 24 native analytes + HFPO-DA and ADONA
+
+  - compound: PFBA
+    compound_class: PFCA
+    sop_quantifier: "213 > 169"
+    sop_ce: 11
+    shimadzu_quantifier: "213 > 169"
+    shimadzu_ce: 11
+    sop_rt_min: 1.1
+    shimadzu_rt_min: null
+    sensitivity_comparison: pending
+    status: needs_optimization
+    notes: "No qualifier transition in SOP; single transition"
+
+  - compound: PFPeA
+    compound_class: PFCA
+    sop_quantifier: "263 > 219"
+    sop_ce: 10
+    shimadzu_quantifier: "263 > 219"
+    shimadzu_ce: 10
+    sop_rt_min: 2.6
+    shimadzu_rt_min: null
+    sensitivity_comparison: pending
+    status: needs_optimization
+    notes: "No qualifier transition in SOP; single transition"
+
+  - compound: PFHxA
+    compound_class: PFCA
+    sop_quantifier: "313 > 269"
+    sop_ce: 10
+    shimadzu_quantifier: "313 > 269"
+    shimadzu_ce: 10
+    sop_rt_min: 4.3
+    shimadzu_rt_min: null
+    sensitivity_comparison: pending
+    status: needs_optimization
+    notes: "Qualifier 313 > 119 (CE 22)"
+
+  - compound: PFHpA
+    compound_class: PFCA
+    sop_quantifier: "363 > 319"
+    sop_ce: 11
+    shimadzu_quantifier: "363 > 319"
+    shimadzu_ce: 11
+    sop_rt_min: 4.9
+    shimadzu_rt_min: null
+    sensitivity_comparison: pending
+    status: needs_optimization
+    notes: "Qualifier 363 > 169 (CE 22)"
+
+  - compound: PFOA
+    compound_class: PFCA
+    sop_quantifier: "413 > 369"
+    sop_ce: 11
+    shimadzu_quantifier: "413 > 369"
+    shimadzu_ce: 11
+    sop_rt_min: 5.5
+    shimadzu_rt_min: null
+    sensitivity_comparison: pending
+    status: needs_optimization
+    notes: "Qualifiers: 413 > 169 (CE 22), 413 > 269 (CE 22)"
+
+  - compound: PFNA
+    compound_class: PFCA
+    sop_quantifier: "463 > 419"
+    sop_ce: 11
+    shimadzu_quantifier: "463 > 419"
+    shimadzu_ce: 11
+    sop_rt_min: 5.8
+    shimadzu_rt_min: null
+    sensitivity_comparison: pending
+    status: needs_optimization
+    notes: "Qualifiers: 463 > 419 (CE 22), 463 > 219 (CE 22)"
+
+  - compound: PFDA
+    compound_class: PFCA
+    sop_quantifier: "513 > 469"
+    sop_ce: 11
+    shimadzu_quantifier: "513 > 469"
+    shimadzu_ce: 11
+    sop_rt_min: 6.1
+    shimadzu_rt_min: null
+    sensitivity_comparison: pending
+    status: needs_optimization
+    notes: "Qualifiers: 513 > 219 (CE 22), 513 > 169 (CE 22)"
+
+  - compound: PFUdA
+    compound_class: PFCA
+    sop_quantifier: "563 > 519"
+    sop_ce: 11
+    shimadzu_quantifier: "563 > 519"
+    shimadzu_ce: 11
+    sop_rt_min: 6.4
+    shimadzu_rt_min: null
+    sensitivity_comparison: pending
+    status: needs_optimization
+    notes: "Qualifiers: 563 > 269 (CE 22), 563 > 219 (CE 33)"
+
+  - compound: PFDoA
+    compound_class: PFCA
+    sop_quantifier: "613 > 569"
+    sop_ce: 11
+    shimadzu_quantifier: "613 > 569"
+    shimadzu_ce: 11
+    sop_rt_min: 6.6
+    shimadzu_rt_min: null
+    sensitivity_comparison: pending
+    status: needs_optimization
+    notes: "Qualifiers: 613 > 169 (CE 33), 613 > 269 (CE 33)"
+
+  - compound: PFTrDA
+    compound_class: PFCA
+    sop_quantifier: "663 > 619"
+    sop_ce: 11
+    shimadzu_quantifier: "663 > 619"
+    shimadzu_ce: 11
+    sop_rt_min: 6.8
+    shimadzu_rt_min: null
+    sensitivity_comparison: pending
+    status: needs_optimization
+    notes: "Qualifiers: 663 > 169 (CE 33), 663 > 269 (CE 33)"
+
+  - compound: PFTeDA
+    compound_class: PFCA
+    sop_quantifier: "713 > 669"
+    sop_ce: 11
+    shimadzu_quantifier: "713 > 669"
+    shimadzu_ce: 11
+    sop_rt_min: 6.9
+    shimadzu_rt_min: null
+    sensitivity_comparison: pending
+    status: needs_optimization
+    notes: "Qualifiers: 713 > 169 (CE 33), 713 > 269 (CE 33)"
+
+  - compound: PFBS
+    compound_class: PFSA
+    sop_quantifier: "299 > 80"
+    sop_ce: 55
+    shimadzu_quantifier: "299 > 80"
+    shimadzu_ce: 55
+    sop_rt_min: 3.6
+    shimadzu_rt_min: null
+    sensitivity_comparison: pending
+    status: needs_optimization
+    notes: "Qualifier 299 > 99 (CE 33); high CE — expect significant reduction on 8060"
+
+  - compound: PFPeS
+    compound_class: PFSA
+    sop_quantifier: "349 > 80"
+    sop_ce: 50
+    shimadzu_quantifier: "349 > 80"
+    shimadzu_ce: 50
+    sop_rt_min: 4.5
+    shimadzu_rt_min: null
+    sensitivity_comparison: pending
+    status: needs_optimization
+    notes: "Qualifier 349 > 99 (CE 50)"
+
+  - compound: PFHxS
+    compound_class: PFSA
+    sop_quantifier: "399 > 80"
+    sop_ce: 50
+    shimadzu_quantifier: "399 > 80"
+    shimadzu_ce: 50
+    sop_rt_min: 5.0
+    shimadzu_rt_min: null
+    sensitivity_comparison: pending
+    status: needs_optimization
+    notes: "Qualifier 399 > 99 (CE 40)"
+
+  - compound: PFHpS
+    compound_class: PFSA
+    sop_quantifier: "449 > 80"
+    sop_ce: 50
+    shimadzu_quantifier: "449 > 80"
+    shimadzu_ce: 50
+    sop_rt_min: 5.5
+    shimadzu_rt_min: null
+    sensitivity_comparison: pending
+    status: needs_optimization
+    notes: "Qualifier 449 > 99 (CE 50)"
+
+  - compound: PFOS
+    compound_class: PFSA
+    sop_quantifier: "499 > 80"
+    sop_ce: 60
+    shimadzu_quantifier: "499 > 80"
+    shimadzu_ce: 60
+    sop_rt_min: 5.4
+    shimadzu_rt_min: null
+    sensitivity_comparison: pending
+    status: needs_optimization
+    notes: "Qualifier 499 > 99 (CE 50); high CE — likely needs reduction on 8060"
+
+  - compound: PFNS
+    compound_class: PFSA
+    sop_quantifier: "549 > 80"
+    sop_ce: 60
+    shimadzu_quantifier: "549 > 80"
+    shimadzu_ce: 60
+    sop_rt_min: 6.1
+    shimadzu_rt_min: null
+    sensitivity_comparison: pending
+    status: needs_optimization
+    notes: "Qualifier 549 > 99 (CE 50)"
+
+  - compound: PFDS
+    compound_class: PFSA
+    sop_quantifier: "599 > 80"
+    sop_ce: 60
+    shimadzu_quantifier: "599 > 80"
+    shimadzu_ce: 60
+    sop_rt_min: 6.4
+    shimadzu_rt_min: null
+    sensitivity_comparison: pending
+    status: needs_optimization
+    notes: "Qualifier 599 > 99 (CE 50)"
+
+  - compound: "4:2-FTS"
+    compound_class: FTS
+    sop_quantifier: "327 > 307"
+    sop_ce: 20
+    shimadzu_quantifier: "327 > 307"
+    shimadzu_ce: 20
+    sop_rt_min: 4.2
+    shimadzu_rt_min: null
+    sensitivity_comparison: pending
+    status: needs_optimization
+    notes: "Qualifier 327 > 81 (CE 20)"
+
+  - compound: "6:2-FTS"
+    compound_class: FTS
+    sop_quantifier: "427 > 407"
+    sop_ce: 25
+    shimadzu_quantifier: "427 > 407"
+    shimadzu_ce: 25
+    sop_rt_min: 5.2
+    shimadzu_rt_min: null
+    sensitivity_comparison: pending
+    status: needs_optimization
+    notes: "Qualifier 427 > 81 (CE 25)"
+
+  - compound: "8:2-FTS"
+    compound_class: FTS
+    sop_quantifier: "527 > 507"
+    sop_ce: 30
+    shimadzu_quantifier: "527 > 507"
+    shimadzu_ce: 30
+    sop_rt_min: 5.9
+    shimadzu_rt_min: null
+    sensitivity_comparison: pending
+    status: needs_optimization
+    notes: "Qualifier 527 > 81 (CE 30)"
+
+  - compound: FOSA
+    compound_class: FOSA
+    sop_quantifier: "498 > 78"
+    sop_ce: 40
+    shimadzu_quantifier: "498 > 78"
+    shimadzu_ce: 40
+    sop_rt_min: 6.5
+    shimadzu_rt_min: null
+    sensitivity_comparison: pending
+    status: needs_optimization
+    notes: "Qualifiers: 498 > 119 (CE 57), 498 > 169 (CE 57)"
+
+  - compound: N-MeFOSAA
+    compound_class: FOSAA
+    sop_quantifier: "570 > 419"
+    sop_ce: 28
+    shimadzu_quantifier: "570 > 419"
+    shimadzu_ce: 28
+    sop_rt_min: 6.1
+    shimadzu_rt_min: null
+    sensitivity_comparison: pending
+    status: needs_optimization
+    notes: "Qualifiers: 570 > 512 (CE 28), 570 > 483 (CE 28)"
+
+  - compound: N-EtFOSAA
+    compound_class: FOSAA
+    sop_quantifier: "584 > 419"
+    sop_ce: 30
+    shimadzu_quantifier: "584 > 419"
+    shimadzu_ce: 30
+    sop_rt_min: 6.2
+    shimadzu_rt_min: null
+    sensitivity_comparison: pending
+    status: needs_optimization
+    notes: "Qualifiers: 584 > 526 (CE 30), 584 > 483 (CE 30)"
+
+compounds_not_in_sop:
+  description: >
+    HFPO-DA (GenX) and ADONA are included in the QAPP target list but are NOT
+    in the validated SOP method. These compounds require standalone validation
+    on the 8060 — they cannot rely on SOP validation data for acceptance.
+    Parameters in compounds.yaml are estimated, not SOP-validated.
+
+  compounds:
+    - compound: HFPO-DA
+      other_name: GenX
+      compound_class: ether
+      cas: 13252-13-6
+      in_qapp: true
+      in_sop: false
+      quantifier: "329 > 285"
+      estimated_ce: 10
+      estimated_rt_min: 1.8
+      internal_standard: M3HFPO-DA
+      status: needs_optimization
+      validation_required: >
+        Full standalone validation including calibration, precision,
+        accuracy, MDL, matrix effects, and recovery. Cannot use SOP
+        validation data. CE, pre-bias, and RT must be optimized on 8060.
+      notes: >
+        Dwell time set to 100 ms (vs 5 ms for SOP compounds) due to
+        expected lower sensitivity. May need to increase injection volume
+        or reduce final extract volume. Early eluter — may be affected
+        by system dwell volume differences.
+
+    - compound: ADONA
+      other_name: Sodium dodecafluoro-3H-4,8-dioxanonanoate
+      compound_class: ether
+      cas: 958445-44-8
+      in_qapp: true
+      in_sop: false
+      quantifier: "377 > 251"
+      estimated_ce: 14
+      estimated_rt_min: 2.3
+      internal_standard: M3HFPO-DA
+      status: needs_optimization
+      validation_required: >
+        Full standalone validation including calibration, precision,
+        accuracy, MDL, matrix effects, and recovery. Cannot use SOP
+        validation data. CE, pre-bias, and RT must be optimized on 8060.
+      notes: >
+        Dwell time set to 100 ms. Uses HFPO-DA IS (M3HFPO-DA) which
+        is also not SOP-validated. Early eluter.
+
+qc_criteria:
+  description: >
+    QC acceptance criteria from SOP Tables 4-5. Most criteria transfer
+    directly; some may need adjustment if 8060 sensitivity differs.
+
+  criteria:
+    - parameter: Calibration r-squared
+      sop_value: ">= 0.99"
+      shimadzu_value: ">= 0.99"
+      status: transferred
+      notes: "SOP 4.1.1; stricter than QAPP requirement of >= 0.98"
+
+    - parameter: Calibration range
+      sop_value: "0.0125 - 50 ng/mL (13 points)"
+      shimadzu_value: "0.0125 - 50 ng/mL (13 points)"
+      status: transferred
+      notes: "May need to adjust low end if 8060 MDLs differ significantly"
+
+    - parameter: CCV acceptance
+      sop_value: "+/- 30% (70-130%)"
+      shimadzu_value: "+/- 30% (70-130%)"
+      status: transferred
+      notes: "SOP Table 5; lowest standard +/- 50%"
+
+    - parameter: Method blank limit
+      sop_value: "< 0.40 ng/L"
+      shimadzu_value: "< 0.40 ng/L"
+      status: transferred
+      notes: "SOP 4.2.1.2"
+
+    - parameter: LFB accuracy
+      sop_value: "+/- 30% of expected"
+      shimadzu_value: "+/- 30% of expected"
+      status: transferred
+      notes: "SOP Table 5"
+
+    - parameter: Precision (IPA)
+      sop_value: "RSD <= 20%"
+      shimadzu_value: "RSD <= 20%"
+      status: transferred
+      notes: "SOP Table 4; 5 replicate LFBs"
+
+    - parameter: Accuracy (IPA)
+      sop_value: "+/- 30% of true value"
+      shimadzu_value: "+/- 30% of true value"
+      status: transferred
+      notes: "SOP Table 4; mean recovery 70-130%"
+
+    - parameter: Duplicate RPD
+      sop_value: "<= 30%"
+      shimadzu_value: "<= 30%"
+      status: transferred
+      notes: "SOP Table 5; analytical duplicates"
+
+    - parameter: Recovery range
+      sop_value: "70-130%"
+      shimadzu_value: "70-130%"
+      status: transferred
+      notes: "SOP 7.3.4; flag outside range if CCV in spec"
+
+    - parameter: MDL values
+      sop_value: "SOP Table 7 (Waters TQD values)"
+      shimadzu_value: "To be determined on 8060"
+      status: needs_optimization
+      notes: >
+        MDLs must be re-established on 8060. Expected to be comparable
+        or better due to UFsweeper III. Critical for QAPP data quality
+        objectives. See SOP Table 7 for TQD reference values.
+
+    - parameter: Dwell times
+      sop_value: "5 ms (most compounds), 6-17 ms (short-chain)"
+      shimadzu_value: "Starting at SOP values; 8060 supports 1-3 ms"
+      status: needs_optimization
+      notes: >
+        8060 can use shorter dwell times than TQD due to faster
+        polarity switching. May improve data density across peaks.
+        Optimize for S/N vs data points per peak.

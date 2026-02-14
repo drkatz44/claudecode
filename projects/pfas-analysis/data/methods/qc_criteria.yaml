@@ -1,0 +1,99 @@
+# QC Acceptance Criteria
+# Source: SOP E-AED-PEB-SOP-1908-1 (July 2019), Sections 4.1-4.2, Tables 4-5
+
+calibration:
+  type: isotope_dilution
+  points: 13  # SOP Table 2: 0.00 through 50 ng/mL (13 levels)
+  range_ng_ml:
+    low: 0.0125
+    high: 50.0
+  is_concentration_ng_ml: 10.0
+  acceptance:
+    r_squared_min: 0.99  # SOP 4.1.1: r² ≥ 0.99 (stricter than QAPP's 0.98)
+  corrective_action: >
+    If concentrations exceed calibration range, run additional standards
+    to extend the range or dilute the sample.
+
+ccv:  # Continuing Calibration Verification
+  frequency: every 10 field samples, plus beginning and end of batch
+  acceptance_pct: 30.0  # 70-130% of true value (SOP 4.2.1.1)
+  lowest_standard_acceptance_pct: 50.0  # 50-150% for lowest standard (SOP Table 5)
+
+blanks:
+  recovery_standard:
+    description: >
+      Initial mobile phase spiked with IS and analytes.
+      Confirms no background interference from mobile phase.
+    frequency: each sample set
+
+  method_blank:
+    description: >
+      ASW or T1W spiked with IS only, processed as a field sample.
+      Confirms no background contamination from extraction procedure.
+    frequency: each extraction batch (at least 1 per 20 field samples)
+    acceptance_max_ng_l: 0.40  # SOP 4.2.1.2: MBs > 0.40 ng/L exceed criteria
+
+  field_blank:
+    description: >
+      PFAS-free T1W or ASW transported to sampling site,
+      processed as a field sample. Confirms no contamination
+      from sample collection/handling.
+    frequency: each sampling event
+
+lfb:  # Laboratory Fortified Blank
+  description: >
+    ASW spiked with analytes and IS, processed as field sample.
+    Determines accuracy and precision of the method.
+  acceptance_pct: 30.0  # within ±30% of expected (accuracy)
+  frequency: each extraction set
+
+duplicates:
+  field_duplicate:
+    description: >
+      Collected simultaneously with field sample, treated identically.
+      Checks precision of collection, preservation, storage, and lab procedures.
+    frequency: each sampling event
+  method_duplicate:
+    description: >
+      At least one extraction in duplicate if small number of samples.
+    frequency: as needed
+  analytical_duplicate:
+    selection: random 10% of samples per run (minimum 1)
+    rpd_max_pct: 30.0  # reanalyze all if RPD > 30%
+
+matrix_effects:
+  description: >
+    Compare post-SPE spike vs reconstitution solvent spike.
+    Evaluate ion suppression/enhancement for each analyte.
+  calculation: ((post_spe_spike / solvent_spike) - 1) * 100
+
+recovery:
+  description: >
+    Compare pre-SPE spike vs post-SPE spike.
+    Evaluate extraction efficiency.
+  calculation: (pre_spe_spike / post_spe_spike) * 100
+  qc_range_pct: [70, 130]  # SOP note: recoveries should be 70-130%
+  matrix_flag: >
+    If recovery is outside 70-130% but CCV is in spec, flag result
+    as potential matrix interference.
+
+initial_validation:  # SOP Table 4
+  precision:
+    description: Five replicate LFBs spiked within calibration range
+    acceptance_rsd_max_pct: 20.0
+  accuracy:
+    description: Average recovery from precision replicates
+    acceptance_pct: 30.0  # ±30% of true value
+  detection_limit:
+    description: Seven replicate LFBs at concentration near detection limit
+    method: "MDL = s × t(n-1, 1-α=0.99); n=7, t=3.14"
+
+sample_handling:
+  containers: polyethylene bottles
+  no_fluorinated_materials: true
+  storage: dark, 4C
+  extraction_holding_time_days: 7
+  extract_holding_time_days: 20  # SOP 4.2.5: 20 days at room temp
+  final_volume_ml: 1.0
+  sample_volume_ml: [500, 1000]  # SOP: 500-1000 mL
+  reconstitution_solvent: "75:25 T1W:MeOH (v/v)"

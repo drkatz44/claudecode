@@ -1,0 +1,770 @@
+# Wellington PFAC-24PAR Native Compounds and MPFAC-24ES Internal Standards
+# Monoisotopic masses and expected MRM transitions for ESI negative mode
+#
+# References:
+# - Wellington Laboratories product documentation
+# - EPA Method 533, 537.1, 1633
+# - Agilent PFAS MRM Database
+#
+# NOTE: Transitions are literature/expected values. Optimize CE on instrument.
+# Shimadzu 8060 optimization via sequential injection, not direct infusion.
+
+compounds:
+
+  # ============================================================================
+  # PERFLUOROCARBOXYLIC ACIDS (PFCAs) - C4 to C14
+  # [M-H]- → loss of CO2 (44) or CO2+HF (64) typical
+  # ============================================================================
+
+  - abbreviation: "PFBA"
+    name: "Perfluorobutanoic acid"
+    cas_number: "375-22-4"
+    molecular_formula: "C4HF7O2"
+    monoisotopic_mass: 213.9864
+    compound_class: "PFCA"
+    internal_standard: "M3PFBA"
+    transitions:
+      - precursor_mz: 212.9
+        product_mz: 169.0      # [M-H-CO2]-
+        is_quantifier: true
+        collision_energy: 10   # optimize
+        polarity: "negative"
+      - precursor_mz: 212.9
+        product_mz: 168.9
+        is_quantifier: false
+        collision_energy: 10
+        polarity: "negative"
+
+  - abbreviation: "PFPeA"
+    name: "Perfluoropentanoic acid"
+    cas_number: "2706-90-3"
+    molecular_formula: "C5HF9O2"
+    monoisotopic_mass: 263.9832
+    compound_class: "PFCA"
+    internal_standard: "M5PFPeA"
+    transitions:
+      - precursor_mz: 262.9
+        product_mz: 218.9      # [M-H-CO2]-
+        is_quantifier: true
+        collision_energy: 10
+        polarity: "negative"
+      - precursor_mz: 262.9
+        product_mz: 69.0       # CF3-
+        is_quantifier: false
+        collision_energy: 25
+        polarity: "negative"
+
+  - abbreviation: "PFHxA"
+    name: "Perfluorohexanoic acid"
+    cas_number: "307-24-4"
+    molecular_formula: "C6HF11O2"
+    monoisotopic_mass: 313.9800
+    compound_class: "PFCA"
+    internal_standard: "M5PFHxA"
+    transitions:
+      - precursor_mz: 312.9
+        product_mz: 268.9      # [M-H-CO2]-
+        is_quantifier: true
+        collision_energy: 10
+        polarity: "negative"
+      - precursor_mz: 312.9
+        product_mz: 119.0      # C2F5-
+        is_quantifier: false
+        collision_energy: 20
+        polarity: "negative"
+
+  - abbreviation: "PFHpA"
+    name: "Perfluoroheptanoic acid"
+    cas_number: "375-85-9"
+    molecular_formula: "C7HF13O2"
+    monoisotopic_mass: 363.9768
+    compound_class: "PFCA"
+    internal_standard: "M4PFHpA"
+    transitions:
+      - precursor_mz: 362.9
+        product_mz: 318.9      # [M-H-CO2]-
+        is_quantifier: true
+        collision_energy: 10
+        polarity: "negative"
+      - precursor_mz: 362.9
+        product_mz: 169.0      # C3F7-
+        is_quantifier: false
+        collision_energy: 20
+        polarity: "negative"
+
+  - abbreviation: "PFOA"
+    name: "Perfluorooctanoic acid"
+    cas_number: "335-67-1"
+    molecular_formula: "C8HF15O2"
+    monoisotopic_mass: 413.9736
+    compound_class: "PFCA"
+    internal_standard: "M8PFOA"
+    transitions:
+      - precursor_mz: 412.9
+        product_mz: 368.9      # [M-H-CO2]-
+        is_quantifier: true
+        collision_energy: 10
+        polarity: "negative"
+      - precursor_mz: 412.9
+        product_mz: 168.9      # C3F7O-
+        is_quantifier: false
+        collision_energy: 18
+        polarity: "negative"
+
+  - abbreviation: "PFNA"
+    name: "Perfluorononanoic acid"
+    cas_number: "375-95-1"
+    molecular_formula: "C9HF17O2"
+    monoisotopic_mass: 463.9704
+    compound_class: "PFCA"
+    internal_standard: "M9PFNA"
+    transitions:
+      - precursor_mz: 462.9
+        product_mz: 418.9      # [M-H-CO2]-
+        is_quantifier: true
+        collision_energy: 10
+        polarity: "negative"
+      - precursor_mz: 462.9
+        product_mz: 218.9
+        is_quantifier: false
+        collision_energy: 18
+        polarity: "negative"
+
+  - abbreviation: "PFDA"
+    name: "Perfluorodecanoic acid"
+    cas_number: "335-76-2"
+    molecular_formula: "C10HF19O2"
+    monoisotopic_mass: 513.9672
+    compound_class: "PFCA"
+    internal_standard: "M6PFDA"
+    transitions:
+      - precursor_mz: 512.9
+        product_mz: 468.9      # [M-H-CO2]-
+        is_quantifier: true
+        collision_energy: 10
+        polarity: "negative"
+      - precursor_mz: 512.9
+        product_mz: 268.9
+        is_quantifier: false
+        collision_energy: 18
+        polarity: "negative"
+
+  - abbreviation: "PFUnA"
+    name: "Perfluoroundecanoic acid"
+    cas_number: "2058-94-8"
+    molecular_formula: "C11HF21O2"
+    monoisotopic_mass: 563.9640
+    compound_class: "PFCA"
+    internal_standard: "M7PFUnA"
+    transitions:
+      - precursor_mz: 562.9
+        product_mz: 518.9      # [M-H-CO2]-
+        is_quantifier: true
+        collision_energy: 10
+        polarity: "negative"
+      - precursor_mz: 562.9
+        product_mz: 268.9
+        is_quantifier: false
+        collision_energy: 20
+        polarity: "negative"
+
+  - abbreviation: "PFDoA"
+    name: "Perfluorododecanoic acid"
+    cas_number: "307-55-1"
+    molecular_formula: "C12HF23O2"
+    monoisotopic_mass: 613.9608
+    compound_class: "PFCA"
+    internal_standard: "MPFDoA"
+    transitions:
+      - precursor_mz: 612.9
+        product_mz: 568.9      # [M-H-CO2]-
+        is_quantifier: true
+        collision_energy: 12
+        polarity: "negative"
+      - precursor_mz: 612.9
+        product_mz: 168.9
+        is_quantifier: false
+        collision_energy: 22
+        polarity: "negative"
+
+  - abbreviation: "PFTrDA"
+    name: "Perfluorotridecanoic acid"
+    cas_number: "72629-94-8"
+    molecular_formula: "C13HF25O2"
+    monoisotopic_mass: 663.9576
+    compound_class: "PFCA"
+    internal_standard: "M2PFTeDA"  # often paired with TeDA IS
+    transitions:
+      - precursor_mz: 662.9
+        product_mz: 618.9      # [M-H-CO2]-
+        is_quantifier: true
+        collision_energy: 12
+        polarity: "negative"
+      - precursor_mz: 662.9
+        product_mz: 168.9
+        is_quantifier: false
+        collision_energy: 24
+        polarity: "negative"
+
+  - abbreviation: "PFTeDA"
+    name: "Perfluorotetradecanoic acid"
+    cas_number: "376-06-7"
+    molecular_formula: "C14HF27O2"
+    monoisotopic_mass: 713.9544
+    compound_class: "PFCA"
+    internal_standard: "M2PFTeDA"
+    transitions:
+      - precursor_mz: 712.9
+        product_mz: 668.9      # [M-H-CO2]-
+        is_quantifier: true
+        collision_energy: 12
+        polarity: "negative"
+      - precursor_mz: 712.9
+        product_mz: 168.9
+        is_quantifier: false
+        collision_energy: 26
+        polarity: "negative"
+
+  # ============================================================================
+  # PERFLUOROSULFONIC ACIDS (PFSAs) - C4 to C10
+  # [M-H]- → SO3- (m/z 80) or FSO3- (m/z 99) typical
+  # ============================================================================
+
+  - abbreviation: "PFBS"
+    name: "Perfluorobutanesulfonic acid"
+    cas_number: "375-73-5"
+    molecular_formula: "C4HF9O3S"
+    monoisotopic_mass: 299.9503
+    compound_class: "PFSA"
+    internal_standard: "M3PFBS"
+    transitions:
+      - precursor_mz: 298.9
+        product_mz: 80.0       # SO3-
+        is_quantifier: true
+        collision_energy: 30
+        polarity: "negative"
+      - precursor_mz: 298.9
+        product_mz: 99.0       # FSO3-
+        is_quantifier: false
+        collision_energy: 28
+        polarity: "negative"
+
+  - abbreviation: "PFPeS"
+    name: "Perfluoropentanesulfonic acid"
+    cas_number: "2706-91-4"
+    molecular_formula: "C5HF11O3S"
+    monoisotopic_mass: 349.9471
+    compound_class: "PFSA"
+    internal_standard: "M3PFBS"  # typically use PFBS IS
+    transitions:
+      - precursor_mz: 348.9
+        product_mz: 80.0       # SO3-
+        is_quantifier: true
+        collision_energy: 35
+        polarity: "negative"
+      - precursor_mz: 348.9
+        product_mz: 99.0       # FSO3-
+        is_quantifier: false
+        collision_energy: 30
+        polarity: "negative"
+
+  - abbreviation: "PFHxS"
+    name: "Perfluorohexanesulfonic acid"
+    cas_number: "355-46-4"
+    molecular_formula: "C6HF13O3S"
+    monoisotopic_mass: 399.9439
+    compound_class: "PFSA"
+    internal_standard: "M3PFHxS"
+    notes: "PFAC-24PAR includes linear + branched isomers"
+    transitions:
+      - precursor_mz: 398.9
+        product_mz: 80.0       # SO3-
+        is_quantifier: true
+        collision_energy: 38
+        polarity: "negative"
+      - precursor_mz: 398.9
+        product_mz: 99.0       # FSO3-
+        is_quantifier: false
+        collision_energy: 35
+        polarity: "negative"
+
+  - abbreviation: "PFHpS"
+    name: "Perfluoroheptanesulfonic acid"
+    cas_number: "375-92-8"
+    molecular_formula: "C7HF15O3S"
+    monoisotopic_mass: 449.9407
+    compound_class: "PFSA"
+    internal_standard: "M8PFOS"  # typically use PFOS IS
+    transitions:
+      - precursor_mz: 448.9
+        product_mz: 80.0       # SO3-
+        is_quantifier: true
+        collision_energy: 42
+        polarity: "negative"
+      - precursor_mz: 448.9
+        product_mz: 99.0       # FSO3-
+        is_quantifier: false
+        collision_energy: 38
+        polarity: "negative"
+
+  - abbreviation: "PFOS"
+    name: "Perfluorooctanesulfonic acid"
+    cas_number: "1763-23-1"
+    molecular_formula: "C8HF17O3S"
+    monoisotopic_mass: 499.9375
+    compound_class: "PFSA"
+    internal_standard: "M8PFOS"
+    notes: "PFAC-24PAR includes linear + branched isomers"
+    transitions:
+      - precursor_mz: 498.9
+        product_mz: 80.0       # SO3-
+        is_quantifier: true
+        collision_energy: 45
+        polarity: "negative"
+      - precursor_mz: 498.9
+        product_mz: 99.0       # FSO3-
+        is_quantifier: false
+        collision_energy: 42
+        polarity: "negative"
+
+  - abbreviation: "PFNS"
+    name: "Perfluorononanesulfonic acid"
+    cas_number: "68259-12-1"
+    molecular_formula: "C9HF19O3S"
+    monoisotopic_mass: 549.9343
+    compound_class: "PFSA"
+    internal_standard: "M8PFOS"
+    transitions:
+      - precursor_mz: 548.9
+        product_mz: 80.0       # SO3-
+        is_quantifier: true
+        collision_energy: 48
+        polarity: "negative"
+      - precursor_mz: 548.9
+        product_mz: 99.0       # FSO3-
+        is_quantifier: false
+        collision_energy: 45
+        polarity: "negative"
+
+  - abbreviation: "PFDS"
+    name: "Perfluorodecanesulfonic acid"
+    cas_number: "335-77-3"
+    molecular_formula: "C10HF21O3S"
+    monoisotopic_mass: 599.9311
+    compound_class: "PFSA"
+    internal_standard: "M8PFOS"
+    transitions:
+      - precursor_mz: 598.9
+        product_mz: 80.0       # SO3-
+        is_quantifier: true
+        collision_energy: 50
+        polarity: "negative"
+      - precursor_mz: 598.9
+        product_mz: 99.0       # FSO3-
+        is_quantifier: false
+        collision_energy: 48
+        polarity: "negative"
+
+  # ============================================================================
+  # FLUOROTELOMER SULFONATES (FTS)
+  # [M-H]- → SO3- (m/z 80) typical
+  # ============================================================================
+
+  - abbreviation: "4:2 FTS"
+    name: "4:2 Fluorotelomer sulfonic acid"
+    cas_number: "757124-72-4"
+    molecular_formula: "C6H5F9O3S"
+    monoisotopic_mass: 327.9816
+    compound_class: "FTS"
+    internal_standard: "M2-6:2FTS"
+    transitions:
+      - precursor_mz: 326.9
+        product_mz: 80.0       # SO3-
+        is_quantifier: true
+        collision_energy: 30
+        polarity: "negative"
+      - precursor_mz: 326.9
+        product_mz: 307.0      # [M-H-HF]-
+        is_quantifier: false
+        collision_energy: 18
+        polarity: "negative"
+
+  - abbreviation: "6:2 FTS"
+    name: "6:2 Fluorotelomer sulfonic acid"
+    cas_number: "27619-97-2"
+    molecular_formula: "C8H5F13O3S"
+    monoisotopic_mass: 427.9752
+    compound_class: "FTS"
+    internal_standard: "M2-6:2FTS"
+    transitions:
+      - precursor_mz: 426.9
+        product_mz: 80.0       # SO3-
+        is_quantifier: true
+        collision_energy: 35
+        polarity: "negative"
+      - precursor_mz: 426.9
+        product_mz: 407.0      # [M-H-HF]-
+        is_quantifier: false
+        collision_energy: 20
+        polarity: "negative"
+
+  - abbreviation: "8:2 FTS"
+    name: "8:2 Fluorotelomer sulfonic acid"
+    cas_number: "39108-34-4"
+    molecular_formula: "C10H5F17O3S"
+    monoisotopic_mass: 527.9688
+    compound_class: "FTS"
+    internal_standard: "M2-8:2FTS"
+    transitions:
+      - precursor_mz: 526.9
+        product_mz: 80.0       # SO3-
+        is_quantifier: true
+        collision_energy: 40
+        polarity: "negative"
+      - precursor_mz: 526.9
+        product_mz: 507.0      # [M-H-HF]-
+        is_quantifier: false
+        collision_energy: 22
+        polarity: "negative"
+
+  # ============================================================================
+  # SULFONAMIDES AND SULFONAMIDOACETIC ACIDS
+  # ============================================================================
+
+  - abbreviation: "FOSA"
+    name: "Perfluorooctanesulfonamide"
+    cas_number: "754-91-6"
+    molecular_formula: "C8H2F17NO2S"
+    monoisotopic_mass: 498.9536
+    compound_class: "sulfonamide"
+    internal_standard: "M8FOSA"
+    transitions:
+      - precursor_mz: 497.9
+        product_mz: 78.0       # [SO2N]-
+        is_quantifier: true
+        collision_energy: 35
+        polarity: "negative"
+      - precursor_mz: 497.9
+        product_mz: 169.0
+        is_quantifier: false
+        collision_energy: 28
+        polarity: "negative"
+
+  - abbreviation: "N-MeFOSAA"
+    name: "N-Methylperfluorooctanesulfonamidoacetic acid"
+    cas_number: "2355-31-9"
+    molecular_formula: "C11H6F17NO4S"
+    monoisotopic_mass: 570.9747
+    compound_class: "sulfonamidoacetic acid"
+    internal_standard: "d3-N-MeFOSAA"
+    transitions:
+      - precursor_mz: 569.9
+        product_mz: 419.0      # [M-H-CH2CO2-CH3]-
+        is_quantifier: true
+        collision_energy: 22
+        polarity: "negative"
+      - precursor_mz: 569.9
+        product_mz: 483.0      # [M-H-CH2CO2-H]-
+        is_quantifier: false
+        collision_energy: 18
+        polarity: "negative"
+
+  - abbreviation: "N-EtFOSAA"
+    name: "N-Ethylperfluorooctanesulfonamidoacetic acid"
+    cas_number: "2991-50-6"
+    molecular_formula: "C12H8F17NO4S"
+    monoisotopic_mass: 584.9903
+    compound_class: "sulfonamidoacetic acid"
+    internal_standard: "d5-N-EtFOSAA"
+    transitions:
+      - precursor_mz: 583.9
+        product_mz: 419.0      # [M-H-CH2CO2-C2H5]-
+        is_quantifier: true
+        collision_energy: 22
+        polarity: "negative"
+      - precursor_mz: 583.9
+        product_mz: 526.0
+        is_quantifier: false
+        collision_energy: 18
+        polarity: "negative"
+
+
+# ==============================================================================
+# INTERNAL STANDARDS - MPFAC-24ES (19 components)
+# Mass-labeled (13C, 18O, or D) isotopes
+# ==============================================================================
+
+internal_standards:
+
+  - abbreviation: "M3PFBA"
+    name: "Perfluoro-[1,2,3,4-13C4]butanoic acid"
+    cas_number: "n/a"
+    molecular_formula: "13C3C1HF7O2"
+    monoisotopic_mass: 216.9965
+    is_internal_standard: true
+    native_analyte: "PFBA"
+    transitions:
+      - precursor_mz: 215.9
+        product_mz: 171.9
+        is_quantifier: true
+        collision_energy: 10
+        polarity: "negative"
+
+  - abbreviation: "M5PFPeA"
+    name: "Perfluoro-[13C5]pentanoic acid"
+    cas_number: "n/a"
+    molecular_formula: "13C5HF9O2"
+    monoisotopic_mass: 268.9999
+    is_internal_standard: true
+    native_analyte: "PFPeA"
+    transitions:
+      - precursor_mz: 267.9
+        product_mz: 223.0
+        is_quantifier: true
+        collision_energy: 10
+        polarity: "negative"
+
+  - abbreviation: "M5PFHxA"
+    name: "Perfluoro-[1,2,3,4,6-13C5]hexanoic acid"
+    cas_number: "n/a"
+    molecular_formula: "13C5C1HF11O2"
+    monoisotopic_mass: 318.9967
+    is_internal_standard: true
+    native_analyte: "PFHxA"
+    transitions:
+      - precursor_mz: 317.9
+        product_mz: 272.9
+        is_quantifier: true
+        collision_energy: 10
+        polarity: "negative"
+
+  - abbreviation: "M4PFHpA"
+    name: "Perfluoro-[1,2,3,4-13C4]heptanoic acid"
+    cas_number: "n/a"
+    molecular_formula: "13C4C3HF13O2"
+    monoisotopic_mass: 367.9902
+    is_internal_standard: true
+    native_analyte: "PFHpA"
+    transitions:
+      - precursor_mz: 366.9
+        product_mz: 321.9
+        is_quantifier: true
+        collision_energy: 10
+        polarity: "negative"
+
+  - abbreviation: "M8PFOA"
+    name: "Perfluoro-[13C8]octanoic acid"
+    cas_number: "n/a"
+    molecular_formula: "13C8HF15O2"
+    monoisotopic_mass: 421.0004
+    is_internal_standard: true
+    native_analyte: "PFOA"
+    transitions:
+      - precursor_mz: 420.9
+        product_mz: 375.9
+        is_quantifier: true
+        collision_energy: 10
+        polarity: "negative"
+
+  - abbreviation: "M9PFNA"
+    name: "Perfluoro-[13C9]nonanoic acid"
+    cas_number: "n/a"
+    molecular_formula: "13C9HF17O2"
+    monoisotopic_mass: 472.0005
+    is_internal_standard: true
+    native_analyte: "PFNA"
+    transitions:
+      - precursor_mz: 471.9
+        product_mz: 426.9
+        is_quantifier: true
+        collision_energy: 10
+        polarity: "negative"
+
+  - abbreviation: "M6PFDA"
+    name: "Perfluoro-[1,2,3,4,5,6-13C6]decanoic acid"
+    cas_number: "n/a"
+    molecular_formula: "13C6C4HF19O2"
+    monoisotopic_mass: 519.9873
+    is_internal_standard: true
+    native_analyte: "PFDA"
+    transitions:
+      - precursor_mz: 518.9
+        product_mz: 473.9
+        is_quantifier: true
+        collision_energy: 10
+        polarity: "negative"
+
+  - abbreviation: "M7PFUnA"
+    name: "Perfluoro-[1,2,3,4,5,6,7-13C7]undecanoic acid"
+    cas_number: "n/a"
+    molecular_formula: "13C7C4HF21O2"
+    monoisotopic_mass: 570.9874
+    is_internal_standard: true
+    native_analyte: "PFUnA"
+    transitions:
+      - precursor_mz: 569.9
+        product_mz: 524.9
+        is_quantifier: true
+        collision_energy: 10
+        polarity: "negative"
+
+  - abbreviation: "MPFDoA"
+    name: "Perfluoro-[1,2-13C2]dodecanoic acid"
+    cas_number: "n/a"
+    molecular_formula: "13C2C10HF23O2"
+    monoisotopic_mass: 615.9675
+    is_internal_standard: true
+    native_analyte: "PFDoA"
+    transitions:
+      - precursor_mz: 614.9
+        product_mz: 569.9
+        is_quantifier: true
+        collision_energy: 12
+        polarity: "negative"
+
+  - abbreviation: "M2PFTeDA"
+    name: "Perfluoro-[1,2-13C2]tetradecanoic acid"
+    cas_number: "n/a"
+    molecular_formula: "13C2C12HF27O2"
+    monoisotopic_mass: 715.9611
+    is_internal_standard: true
+    native_analyte: "PFTeDA"
+    notes: "Also used for PFTrDA"
+    transitions:
+      - precursor_mz: 714.9
+        product_mz: 669.9
+        is_quantifier: true
+        collision_energy: 12
+        polarity: "negative"
+
+  - abbreviation: "M3PFBS"
+    name: "Perfluoro-[1,2,3-13C3]butanesulfonic acid"
+    cas_number: "n/a"
+    molecular_formula: "13C3C1HF9O3S"
+    monoisotopic_mass: 302.9604
+    is_internal_standard: true
+    native_analyte: "PFBS"
+    transitions:
+      - precursor_mz: 301.9
+        product_mz: 80.0
+        is_quantifier: true
+        collision_energy: 30
+        polarity: "negative"
+
+  - abbreviation: "M3PFHxS"
+    name: "Perfluoro-[1,2,3-13C3]hexanesulfonic acid"
+    cas_number: "n/a"
+    molecular_formula: "13C3C3HF13O3S"
+    monoisotopic_mass: 402.9540
+    is_internal_standard: true
+    native_analyte: "PFHxS"
+    transitions:
+      - precursor_mz: 401.9
+        product_mz: 80.0
+        is_quantifier: true
+        collision_energy: 38
+        polarity: "negative"
+
+  - abbreviation: "M8PFOS"
+    name: "Perfluoro-[13C8]octanesulfonic acid"
+    cas_number: "n/a"
+    molecular_formula: "13C8HF17O3S"
+    monoisotopic_mass: 507.9643
+    is_internal_standard: true
+    native_analyte: "PFOS"
+    transitions:
+      - precursor_mz: 506.9
+        product_mz: 80.0
+        is_quantifier: true
+        collision_energy: 45
+        polarity: "negative"
+
+  - abbreviation: "M2-6:2FTS"
+    name: "6:2 Fluorotelomer sulfonic acid [1,2-13C2]"
+    cas_number: "n/a"
+    molecular_formula: "13C2C6H5F13O3S"
+    monoisotopic_mass: 429.9819
+    is_internal_standard: true
+    native_analyte: "6:2 FTS"
+    notes: "Also used for 4:2 FTS"
+    transitions:
+      - precursor_mz: 428.9
+        product_mz: 80.0
+        is_quantifier: true
+        collision_energy: 35
+        polarity: "negative"
+
+  - abbreviation: "M2-8:2FTS"
+    name: "8:2 Fluorotelomer sulfonic acid [1,2-13C2]"
+    cas_number: "n/a"
+    molecular_formula: "13C2C8H5F17O3S"
+    monoisotopic_mass: 529.9755
+    is_internal_standard: true
+    native_analyte: "8:2 FTS"
+    transitions:
+      - precursor_mz: 528.9
+        product_mz: 80.0
+        is_quantifier: true
+        collision_energy: 40
+        polarity: "negative"
+
+  - abbreviation: "M8FOSA"
+    name: "Perfluoro-[13C8]octanesulfonamide"
+    cas_number: "n/a"
+    molecular_formula: "13C8H2F17NO2S"
+    monoisotopic_mass: 506.9804
+    is_internal_standard: true
+    native_analyte: "FOSA"
+    transitions:
+      - precursor_mz: 505.9
+        product_mz: 78.0
+        is_quantifier: true
+        collision_energy: 35
+        polarity: "negative"
+
+  - abbreviation: "d3-N-MeFOSAA"
+    name: "N-Methyl-d3-perfluorooctanesulfonamidoacetic acid"
+    cas_number: "n/a"
+    molecular_formula: "C11H3D3F17NO4S"
+    monoisotopic_mass: 573.9936
+    is_internal_standard: true
+    native_analyte: "N-MeFOSAA"
+    transitions:
+      - precursor_mz: 572.9
+        product_mz: 419.0
+        is_quantifier: true
+        collision_energy: 22
+        polarity: "negative"
+
+  - abbreviation: "d5-N-EtFOSAA"
+    name: "N-Ethyl-d5-perfluorooctanesulfonamidoacetic acid"
+    cas_number: "n/a"
+    molecular_formula: "C12H3D5F17NO4S"
+    monoisotopic_mass: 590.0218
+    is_internal_standard: true
+    native_analyte: "N-EtFOSAA"
+    transitions:
+      - precursor_mz: 589.0
+        product_mz: 419.0
+        is_quantifier: true
+        collision_energy: 22
+        polarity: "negative"
+
+
+# ==============================================================================
+# VERIFICATION NOTES
+# ==============================================================================
+
+verification_notes:
+  - "Monoisotopic masses calculated from molecular formulas"
+  - "MRM transitions are expected/literature values - VERIFY on instrument"
+  - "Collision energies are starting points - OPTIMIZE via sequential injection on Shimadzu 8060"
+  - "Product ions: PFCAs typically lose CO2 (44 Da), PFSAs produce SO3- (m/z 80) or FSO3- (m/z 99)"
+  - "Qualifier transitions should be confirmed for ion ratio QC"
+
+references:
+  - "Wellington Laboratories PFAC-24PAR / MPFAC-24ES product documentation"
+  - "EPA Method 533 (2019)"
+  - "EPA Method 537.1 (2020)"
+  - "EPA Method 1633 (2024)"
+  - "Agilent PFAS MRM Database"

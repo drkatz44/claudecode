@@ -1,0 +1,538 @@
+# Method Validation Checklist
+# PFAS LC-MS/MS Method: Waters Xevo TQD → Shimadzu LCMS-8060 Adaptation
+# Source: SOP E-AED-PEB-SOP-1908-1, QAPP E-AED-0031514-QP-1-2
+#
+# Status values: pending | pass | fail | na
+# Each step tracks: description, reference, acceptance_criteria, status, notes, date
+
+phases:
+
+  - name: Instrument Setup & LC Transfer
+    phase: 1
+    description: >
+      Set up Shimadzu Nexera X2 / LCMS-8060 system and transfer LC method
+      from Waters Acquity H-Class. LC gradient, column, and mobile phases
+      transfer with minimal changes.
+    steps:
+      - id: "1.1"
+        description: Install and condition BEH C18 column (2.1 x 50 mm, 1.7 um)
+        reference: SOP Appendix 7.1
+        acceptance_criteria: >
+          Stable baseline pressure, <5% RSD over 30 min at 0.4 mL/min
+        status: pending
+        notes: ""
+        date: null
+
+      - id: "1.2"
+        description: Program LC gradient on Nexera X2 (SOP Appendix 7.1 gradient)
+        reference: SOP Appendix 7.1
+        acceptance_criteria: >
+          Gradient profile matches SOP: 25-85% B (0.5-5.0 min), 95% B wash,
+          9.0 min total run time, 0.4 mL/min flow rate
+        status: pending
+        notes: ""
+        date: null
+
+      - id: "1.3"
+        description: Configure autosampler (SIL-30AC MP) — cooler 5C, rinse solvents
+        reference: SOP Appendix 7.1
+        acceptance_criteria: >
+          Cooler stable at 5C, needle wash with MeOH + 0.1% formic acid,
+          40 uL injection volume
+        status: pending
+        notes: ""
+        date: null
+
+      - id: "1.4"
+        description: Set column oven (CTO-20A) to 45C
+        reference: SOP Appendix 7.1
+        acceptance_criteria: Column temp 45.0 +/- 0.5 C
+        status: pending
+        notes: ""
+        date: null
+
+      - id: "1.5"
+        description: Prepare mobile phases — 2 mM ammonium acetate in water (A) and MeOH (B)
+        reference: SOP Appendix 7.1
+        acceptance_criteria: >
+          pH 6.5-7.5 for phase A; both phases prepared with LC-MS grade solvents
+          and PFAS-free labware
+        status: pending
+        notes: ""
+        date: null
+
+      - id: "1.6"
+        description: Verify PFAS-free background — inject blank MeOH/water
+        reference: SOP 7.3.1
+        acceptance_criteria: >
+          No PFAS peaks above instrument noise in blank injections;
+          verify no PTFE components in flow path
+        status: pending
+        notes: ""
+        date: null
+
+  - name: MS Source Optimization (8060-specific)
+    phase: 2
+    description: >
+      Optimize Shimadzu 8060 ESI source parameters. The 8060 uses different
+      source architecture than TQD — parameters do not transfer directly.
+      Use flow injection analysis (FIA) for source optimization.
+    steps:
+      - id: "2.1"
+        description: Set initial source parameters from TQD translation
+        reference: instrument_method.yaml (ms.source section)
+        acceptance_criteria: >
+          Interface voltage 1.0 kV, interface temp 300C, DL temp 250C,
+          heat block 400C, nebulizing gas 3.0 L/min, drying gas 10.0 L/min,
+          heating gas 10.0 L/min
+        status: pending
+        notes: ""
+        date: null
+
+      - id: "2.2"
+        description: >
+          Optimize interface voltage and temperatures via FIA with
+          mixed PFAS standard (~100 ng/mL)
+        reference: 8060 Operation Manual
+        acceptance_criteria: >
+          Maximum signal intensity for representative compounds
+          (PFOA, PFOS, PFHxA, PFBA); signal RSD <10% across 5 injections
+        status: pending
+        notes: ""
+        date: null
+
+      - id: "2.3"
+        description: Optimize gas flows (nebulizing, drying, heating) via FIA
+        reference: 8060 Operation Manual
+        acceptance_criteria: >
+          Maximum S/N for target analytes; stable spray (no signal dropout)
+        status: pending
+        notes: ""
+        date: null
+
+      - id: "2.4"
+        description: >
+          Run LabSolutions MRM Optimization for collision energies and
+          Q1/Q3 pre-bias for all compounds
+        reference: LabSolutions Method Development
+        acceptance_criteria: >
+          CE optimized for all 40 compounds (24 native + 16 IS + HFPO-DA/ADONA);
+          S/N improvement vs starting CE values
+        status: pending
+        notes: "8060 UFsweeper III typically needs 10-20% lower CE than TQD"
+        date: null
+
+      - id: "2.5"
+        description: Record optimized source and MRM parameters
+        reference: compounds.yaml, instrument_method.yaml
+        acceptance_criteria: >
+          All optimized parameters documented in YAML files;
+          gap_analysis.yaml updated with verified values
+        status: pending
+        notes: ""
+        date: null
+
+  - name: Chromatographic Verification
+    phase: 3
+    description: >
+      Verify chromatographic performance on 8060 system matches SOP expectations.
+      RT shifts expected due to different system dwell volume.
+    steps:
+      - id: "3.1"
+        description: Inject mixed standard and verify retention times
+        reference: SOP Table 3 (RT column)
+        acceptance_criteria: >
+          All analytes detected; RT within +/- 0.5 min of SOP values
+          (systematic shift acceptable if consistent)
+        status: pending
+        notes: ""
+        date: null
+
+      - id: "3.2"
+        description: Verify chromatographic resolution between critical pairs
+        reference: SOP Appendix 7.1
+        acceptance_criteria: >
+          Baseline resolution (Rs >= 1.5) between PFHpS/PFOS (RT 5.4-5.5 min),
+          PFOA/PFHpS (RT 5.5 min), and other co-eluting pairs
+        status: pending
+        notes: ""
+        date: null
+
+      - id: "3.3"
+        description: Evaluate peak shape (tailing/fronting)
+        reference: General chromatographic criteria
+        acceptance_criteria: >
+          Peak asymmetry 0.8-1.5 for all analytes; no significant tailing
+          (especially for late-eluting PFSAs)
+        status: pending
+        notes: ""
+        date: null
+
+      - id: "3.4"
+        description: Verify IS co-elution with native analytes
+        reference: SOP Table 3
+        acceptance_criteria: >
+          Each IS elutes within +/- 0.1 min of assigned native analyte
+        status: pending
+        notes: ""
+        date: null
+
+      - id: "3.5"
+        description: Establish MRM time windows for scheduled acquisition
+        reference: SOP Table 3
+        acceptance_criteria: >
+          RT windows capture all analytes with margin (target +/- 1.0 min);
+          sufficient data points across each peak (>= 10 points)
+        status: pending
+        notes: ""
+        date: null
+
+  - name: System Contamination Check
+    phase: 4
+    description: >
+      Verify PFAS-free system background per SOP 7.3.1. Critical for
+      ultra-trace PFAS analysis. Must be completed before calibration.
+    reference: SOP Section 7.3.1
+    steps:
+      - id: "4.1"
+        description: >
+          Run 3 consecutive solvent blanks (75:25 T1W:MeOH) through
+          full extraction and analysis procedure
+        reference: SOP 7.3.1
+        acceptance_criteria: >
+          All target analytes below instrument detection limit;
+          no carryover from previous analyses
+        status: pending
+        notes: ""
+        date: null
+
+      - id: "4.2"
+        description: >
+          Verify method blank (ASW + IS, processed as field sample)
+        reference: SOP 4.2.1.2
+        acceptance_criteria: >
+          All target analytes < 0.40 ng/L in method blank
+        status: pending
+        notes: ""
+        date: null
+
+      - id: "4.3"
+        description: Assess system background for PFAS-free labware confirmation
+        reference: SOP 7.3.1
+        acceptance_criteria: >
+          No PTFE or fluoropolymer materials in sample path;
+          all containers polyethylene; no PFAS-containing detergents
+        status: pending
+        notes: ""
+        date: null
+
+  - name: Calibration
+    phase: 5
+    description: >
+      Establish calibration curves using isotope dilution quantification
+      per SOP Section 4.1 and Table 2.
+    steps:
+      - id: "5.1"
+        description: >
+          Prepare 13-point calibration standards (0.0125 - 50 ng/mL)
+          per SOP Table 2
+        reference: SOP Table 2, Section 4.1
+        acceptance_criteria: >
+          Levels: 0.00, 0.0125, 0.025, 0.05, 0.10, 0.25, 0.50, 1.0, 2.5,
+          5.0, 10.0, 25.0, 50.0 ng/mL; IS at 10 ng/mL all levels
+        status: pending
+        notes: ""
+        date: null
+
+      - id: "5.2"
+        description: Analyze calibration standards in triplicate
+        reference: SOP 4.1
+        acceptance_criteria: >
+          Stable signal across all levels; IS response RSD < 15% across run
+        status: pending
+        notes: ""
+        date: null
+
+      - id: "5.3"
+        description: >
+          Generate calibration curves (analyte/IS area ratio vs concentration)
+        reference: SOP 4.1.1
+        acceptance_criteria: >
+          r^2 >= 0.99 for all analytes (SOP 4.1.1);
+          1/x or 1/x^2 weighting as needed
+        status: pending
+        notes: "SOP requires r^2 >= 0.99 (stricter than QAPP 0.98)"
+        date: null
+
+      - id: "5.4"
+        description: >
+          Verify back-calculated concentrations for each calibration level
+        reference: SOP 4.1.1
+        acceptance_criteria: >
+          Back-calculated values within +/- 30% of nominal for all levels;
+          lowest level within +/- 50%
+        status: pending
+        notes: ""
+        date: null
+
+      - id: "5.5"
+        description: Determine linear dynamic range for each analyte
+        reference: SOP 4.1
+        acceptance_criteria: >
+          Document lowest and highest calibration point meeting criteria;
+          identify any compounds requiring reduced range
+        status: pending
+        notes: ""
+        date: null
+
+  - name: Initial Precision & Accuracy
+    phase: 6
+    description: >
+      Demonstrate method precision and accuracy using replicate LFBs
+      per SOP Section 7.3.2 and Table 4 criteria.
+    steps:
+      - id: "6.1"
+        description: >
+          Prepare and analyze 5 replicate LFBs spiked within calibration range
+        reference: SOP 7.3.2, Table 4
+        acceptance_criteria: >
+          5 replicates of ASW spiked with all analytes and IS,
+          processed through full extraction procedure
+        status: pending
+        notes: ""
+        date: null
+
+      - id: "6.2"
+        description: Calculate precision (RSD) for all analytes
+        reference: SOP Table 4
+        acceptance_criteria: >
+          RSD <= 20% for all analytes across 5 replicates
+        status: pending
+        notes: ""
+        date: null
+
+      - id: "6.3"
+        description: Calculate accuracy (mean recovery) for all analytes
+        reference: SOP Table 4
+        acceptance_criteria: >
+          Mean recovery within +/- 30% of true value (70-130%) for all analytes
+        status: pending
+        notes: ""
+        date: null
+
+      - id: "6.4"
+        description: Document precision and accuracy results by compound class
+        reference: SOP Table 4
+        acceptance_criteria: >
+          All results tabulated with compound, mean, SD, RSD, recovery;
+          any failures documented with corrective action
+        status: pending
+        notes: ""
+        date: null
+
+  - name: Method Detection Limits
+    phase: 7
+    description: >
+      Determine MDLs for Shimadzu 8060 per SOP Section 7.3.3.
+      Compare to SOP Table 7 (Waters TQD) MDL values.
+    steps:
+      - id: "7.1"
+        description: >
+          Prepare and analyze 7 replicate LFBs at concentration near
+          estimated detection limit
+        reference: SOP 7.3.3
+        acceptance_criteria: >
+          7 replicates at 0.1-0.5 ng/mL (approximately 2-5x expected MDL);
+          processed through full extraction procedure
+        status: pending
+        notes: ""
+        date: null
+
+      - id: "7.2"
+        description: >
+          Calculate MDL = s * t(n-1, 1-alpha=0.99) for each analyte
+        reference: SOP 7.3.3
+        acceptance_criteria: >
+          MDL calculated: s = standard deviation of 7 replicates,
+          t = 3.143 (for n=7, 99% confidence); MDL reported in ng/L
+        status: pending
+        notes: ""
+        date: null
+
+      - id: "7.3"
+        description: Compare 8060 MDLs to SOP Table 7 (Waters TQD) values
+        reference: SOP Table 7
+        acceptance_criteria: >
+          8060 MDLs should be comparable to or better than TQD values;
+          document any analytes with significantly higher MDLs (>2x TQD)
+        status: pending
+        notes: "8060 UFsweeper III typically provides better sensitivity"
+        date: null
+
+      - id: "7.4"
+        description: >
+          Determine reporting limits (RL) at 3x MDL or lowest calibration
+          standard, whichever is higher
+        reference: SOP 7.3.3
+        acceptance_criteria: >
+          RL established for all analytes; RL meets project data quality
+          objectives from QAPP Section 5
+        status: pending
+        notes: ""
+        date: null
+
+  - name: Matrix Effects & Recovery
+    phase: 8
+    description: >
+      Evaluate matrix effects and extraction recovery per SOP Section 7.3.4.
+      Critical for estuarine water matrix.
+    steps:
+      - id: "8.1"
+        description: >
+          Prepare post-SPE spike and reconstitution solvent spike samples
+          for matrix effect assessment
+        reference: SOP 7.3.4
+        acceptance_criteria: >
+          Matrix effect = ((post-SPE spike / solvent spike) - 1) * 100;
+          evaluated for each analyte in representative matrix
+        status: pending
+        notes: ""
+        date: null
+
+      - id: "8.2"
+        description: Calculate ion suppression/enhancement for each analyte
+        reference: SOP 7.3.4
+        acceptance_criteria: >
+          Document % matrix effect for each compound;
+          flag analytes with > 25% suppression or enhancement
+        status: pending
+        notes: ""
+        date: null
+
+      - id: "8.3"
+        description: >
+          Prepare pre-SPE and post-SPE spike samples for extraction recovery
+        reference: SOP 7.3.4
+        acceptance_criteria: >
+          Recovery = (pre-SPE spike / post-SPE spike) * 100;
+          target 70-130% for all analytes
+        status: pending
+        notes: ""
+        date: null
+
+      - id: "8.4"
+        description: Evaluate recovery results and flag matrix interference
+        reference: SOP 7.3.4
+        acceptance_criteria: >
+          Recovery 70-130% for all analytes;
+          if recovery outside range but CCV in spec, flag as matrix effect
+        status: pending
+        notes: ""
+        date: null
+
+  - name: Ongoing QC Capability
+    phase: 9
+    description: >
+      Verify the adapted method meets ongoing QC requirements from
+      SOP Table 5 for routine analysis.
+    steps:
+      - id: "9.1"
+        description: >
+          Run CCV at beginning and end of batch, and every 10 field samples
+        reference: SOP Table 5, Section 4.2.1.1
+        acceptance_criteria: >
+          CCV within +/- 30% of true value (70-130%);
+          lowest standard CCV within +/- 50% (50-150%)
+        status: pending
+        notes: ""
+        date: null
+
+      - id: "9.2"
+        description: >
+          Run method blank each extraction batch (1 per 20 field samples minimum)
+        reference: SOP Table 5, Section 4.2.1.2
+        acceptance_criteria: >
+          All analytes < 0.40 ng/L in method blank
+        status: pending
+        notes: ""
+        date: null
+
+      - id: "9.3"
+        description: Run LFB each extraction set to verify accuracy
+        reference: SOP Table 5
+        acceptance_criteria: >
+          LFB recovery within +/- 30% of expected value
+        status: pending
+        notes: ""
+        date: null
+
+      - id: "9.4"
+        description: >
+          Analyze 10% of samples in duplicate (minimum 1 per run)
+        reference: SOP Table 5
+        acceptance_criteria: >
+          Analytical duplicate RPD <= 30%
+        status: pending
+        notes: ""
+        date: null
+
+      - id: "9.5"
+        description: Verify IS response consistency across sample batch
+        reference: SOP Table 5
+        acceptance_criteria: >
+          IS area variation < 50% from mean of calibration standards;
+          flag individual samples with IS area outside range
+        status: pending
+        notes: ""
+        date: null
+
+  - name: Documentation & Approval
+    phase: 10
+    description: >
+      Complete validation documentation and obtain approval for
+      routine use of adapted method on Shimadzu 8060.
+    steps:
+      - id: "10.1"
+        description: Compile validation report with all results
+        reference: QAPP Section 5
+        acceptance_criteria: >
+          Report includes: instrument setup, optimization results,
+          calibration curves, precision/accuracy data, MDLs,
+          matrix effects, recovery, and QC capability demonstration
+        status: pending
+        notes: ""
+        date: null
+
+      - id: "10.2"
+        description: >
+          Document all parameter differences between SOP (TQD) and
+          8060 adapted method
+        reference: gap_analysis.yaml
+        acceptance_criteria: >
+          Gap analysis complete with all parameters verified or justified;
+          no unresolved items in needs_optimization status
+        status: pending
+        notes: ""
+        date: null
+
+      - id: "10.3"
+        description: >
+          Archive optimized LabSolutions method files and compound database
+        reference: Laboratory SOPs
+        acceptance_criteria: >
+          Method files archived with version control;
+          compounds.yaml and instrument_method.yaml updated with final values
+        status: pending
+        notes: ""
+        date: null
+
+      - id: "10.4"
+        description: >
+          Obtain supervisor/QA review and approval of validation package
+        reference: QAPP Section 5
+        acceptance_criteria: >
+          Validation package reviewed and signed off;
+          method approved for routine sample analysis
+        status: pending
+        notes: ""
+        date: null

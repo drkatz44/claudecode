@@ -1,0 +1,1393 @@
+compounds:
+- name: Perfluoro-n-butanoic acid
+  abbreviation: PFBA
+  cas_number: 375-22-4
+  molecular_formula: C4HF7O2
+  molecular_weight: 214.04
+  retention_time_min: 1.1
+  rt_window_min: 1.0
+  internal_standard: MPFBA-13C4
+  is_internal_standard: false
+  compound_class: PFCA
+  transitions:
+  - precursor_mz: 213.0
+    product_mz: 169.0
+    collision_energy: 10.0
+    is_quantifier: true
+    dwell_time_ms: 17.0
+    q1_pre_bias: 25.0
+    q3_pre_bias: 17.0
+    polarity: negative
+  monoisotopic_mass: 213.9865
+- name: Perfluoro-n-pentanoic acid
+  abbreviation: PFPeA
+  cas_number: 2706-90-3
+  molecular_formula: C5HF9O2
+  molecular_weight: 264.05
+  retention_time_min: 2.6
+  rt_window_min: 1.0
+  internal_standard: M5PFPeA-13C5
+  is_internal_standard: false
+  compound_class: PFCA
+  transitions:
+  - precursor_mz: 263.0
+    product_mz: 219.0
+    collision_energy: 8.0
+    is_quantifier: true
+    dwell_time_ms: 7.0
+    q1_pre_bias: 30.0
+    q3_pre_bias: 14.0
+    polarity: negative
+  monoisotopic_mass: 263.9833
+- name: Perfluoro-n-hexanoic acid
+  abbreviation: PFHxA
+  cas_number: 307-24-4
+  molecular_formula: C6HF11O2
+  molecular_weight: 314.05
+  retention_time_min: 4.3
+  rt_window_min: 1.0
+  internal_standard: M5PFHxA-13C5
+  is_internal_standard: false
+  compound_class: PFCA
+  transitions:
+  - precursor_mz: 313.0
+    product_mz: 269.0
+    collision_energy: 8.0
+    is_quantifier: true
+    dwell_time_ms: 5.0
+    q1_pre_bias: 16.0
+    q3_pre_bias: 13.0
+    polarity: negative
+  - precursor_mz: 313.0
+    product_mz: 119.0
+    collision_energy: 19.0
+    is_quantifier: false
+    dwell_time_ms: 5.0
+    q1_pre_bias: 15.0
+    q3_pre_bias: 22.0
+    polarity: negative
+  monoisotopic_mass: 313.9801
+- name: Perfluoro-n-heptanoic acid
+  abbreviation: PFHpA
+  cas_number: 375-85-9
+  molecular_formula: C7HF13O2
+  molecular_weight: 364.06
+  retention_time_min: 4.9
+  rt_window_min: 1.0
+  internal_standard: M4PFHpA-13C4
+  is_internal_standard: false
+  compound_class: PFCA
+  transitions:
+  - precursor_mz: 363.0
+    product_mz: 319.0
+    collision_energy: 9.0
+    is_quantifier: true
+    dwell_time_ms: 5.0
+    q1_pre_bias: 18.0
+    q3_pre_bias: 22.0
+    polarity: negative
+  - precursor_mz: 363.0
+    product_mz: 169.0
+    collision_energy: 15.0
+    is_quantifier: false
+    dwell_time_ms: 5.0
+    q1_pre_bias: 23.0
+    q3_pre_bias: 17.0
+    polarity: negative
+  monoisotopic_mass: 363.9769
+- name: Perfluoro-n-octanoic acid
+  abbreviation: PFOA
+  cas_number: 335-67-1
+  molecular_formula: C8HF15O2
+  molecular_weight: 414.07
+  retention_time_min: 5.5
+  rt_window_min: 1.0
+  internal_standard: M8PFOA-13C8
+  is_internal_standard: false
+  compound_class: PFCA
+  transitions:
+  - precursor_mz: 413.0
+    product_mz: 369.0
+    collision_energy: 10.0
+    is_quantifier: true
+    dwell_time_ms: 5.0
+    q1_pre_bias: 12.0
+    q3_pre_bias: 29.0
+    polarity: negative
+  - precursor_mz: 413.0
+    product_mz: 169.0
+    collision_energy: 17.0
+    is_quantifier: false
+    dwell_time_ms: 5.0
+    q1_pre_bias: 19.0
+    q3_pre_bias: 27.0
+    polarity: negative
+  - precursor_mz: 413.0
+    product_mz: 269.0
+    collision_energy: 11.0
+    is_quantifier: false
+    dwell_time_ms: 5.0
+    q1_pre_bias: 19.0
+    q3_pre_bias: 16.0
+    polarity: negative
+  monoisotopic_mass: 413.9737
+- name: Perfluoro-n-nonanoic acid
+  abbreviation: PFNA
+  cas_number: 375-95-1
+  molecular_formula: C9HF17O2
+  molecular_weight: 464.08
+  retention_time_min: 5.8
+  rt_window_min: 1.0
+  internal_standard: M9PFNA-13C9
+  is_internal_standard: false
+  compound_class: PFCA
+  transitions:
+  - precursor_mz: 463.0
+    product_mz: 419.0
+    collision_energy: 12.0
+    is_quantifier: true
+    dwell_time_ms: 5.0
+    q1_pre_bias: 16.0
+    q3_pre_bias: 30.0
+    polarity: negative
+  - precursor_mz: 463.0
+    product_mz: 419.0
+    collision_energy: 22.0
+    is_quantifier: false
+    dwell_time_ms: 5.0
+    q1_pre_bias: 20.0
+    q3_pre_bias: 0.0
+    polarity: negative
+  - precursor_mz: 463.0
+    product_mz: 219.0
+    collision_energy: 17.0
+    is_quantifier: false
+    dwell_time_ms: 5.0
+    q1_pre_bias: 17.0
+    q3_pre_bias: 15.0
+    polarity: negative
+  monoisotopic_mass: 463.9705
+- name: Perfluoro-n-decanoic acid
+  abbreviation: PFDA
+  cas_number: 335-76-2
+  molecular_formula: C10HF19O2
+  molecular_weight: 514.08
+  retention_time_min: 6.1
+  rt_window_min: 1.0
+  internal_standard: M6PFDA-13C6
+  is_internal_standard: false
+  compound_class: PFCA
+  transitions:
+  - precursor_mz: 513.0
+    product_mz: 469.0
+    collision_energy: 10.0
+    is_quantifier: true
+    dwell_time_ms: 5.0
+    q1_pre_bias: 26.0
+    q3_pre_bias: 17.0
+    polarity: negative
+  - precursor_mz: 513.0
+    product_mz: 219.0
+    collision_energy: 16.0
+    is_quantifier: false
+    dwell_time_ms: 5.0
+    q1_pre_bias: 22.0
+    q3_pre_bias: 16.0
+    polarity: negative
+  - precursor_mz: 513.0
+    product_mz: 169.0
+    collision_energy: 16.0
+    is_quantifier: false
+    dwell_time_ms: 5.0
+    q1_pre_bias: 20.0
+    q3_pre_bias: 20.0
+    polarity: negative
+  monoisotopic_mass: 513.9673
+- name: Perfluoro-n-undecanoic acid
+  abbreviation: PFUdA
+  cas_number: 2058-94-8
+  molecular_formula: C11HF21O2
+  molecular_weight: 564.09
+  retention_time_min: 6.4
+  rt_window_min: 1.0
+  internal_standard: M7PFUdA-13C7
+  is_internal_standard: false
+  compound_class: PFCA
+  transitions:
+  - precursor_mz: 563.0
+    product_mz: 519.0
+    collision_energy: 9.0
+    is_quantifier: true
+    dwell_time_ms: 5.0
+    q1_pre_bias: 20.0
+    q3_pre_bias: 20.0
+    polarity: negative
+  - precursor_mz: 563.0
+    product_mz: 269.0
+    collision_energy: 18.0
+    is_quantifier: false
+    dwell_time_ms: 5.0
+    q1_pre_bias: 28.0
+    q3_pre_bias: 12.0
+    polarity: negative
+  - precursor_mz: 563.0
+    product_mz: 219.0
+    collision_energy: 18.0
+    is_quantifier: false
+    dwell_time_ms: 5.0
+    q1_pre_bias: 22.0
+    q3_pre_bias: 24.0
+    polarity: negative
+  monoisotopic_mass: 563.9641
+- name: Perfluoro-n-dodecanoic acid
+  abbreviation: PFDoA
+  cas_number: 307-55-1
+  molecular_formula: C12HF23O2
+  molecular_weight: 614.1
+  retention_time_min: 6.6
+  rt_window_min: 1.0
+  internal_standard: M2PFDoA-13C2
+  is_internal_standard: false
+  compound_class: PFCA
+  transitions:
+  - precursor_mz: 613.0
+    product_mz: 569.0
+    collision_energy: 12.0
+    is_quantifier: true
+    dwell_time_ms: 5.0
+    q1_pre_bias: 22.0
+    q3_pre_bias: 22.0
+    polarity: negative
+  - precursor_mz: 613.0
+    product_mz: 169.0
+    collision_energy: 25.0
+    is_quantifier: false
+    dwell_time_ms: 5.0
+    q1_pre_bias: 24.0
+    q3_pre_bias: 18.0
+    polarity: negative
+  - precursor_mz: 613.0
+    product_mz: 269.0
+    collision_energy: 17.0
+    is_quantifier: false
+    dwell_time_ms: 5.0
+    q1_pre_bias: 24.0
+    q3_pre_bias: 20.0
+    polarity: negative
+  monoisotopic_mass: 613.9609
+- name: Perfluoro-n-tridecanoic acid
+  abbreviation: PFTrDA
+  cas_number: 72629-94-8
+  molecular_formula: C13HF25O2
+  molecular_weight: 664.1
+  retention_time_min: 6.8
+  rt_window_min: 1.0
+  internal_standard: M2PFTeDA-13C2
+  is_internal_standard: false
+  compound_class: PFCA
+  transitions:
+  - precursor_mz: 663.0
+    product_mz: 619.0
+    collision_energy: 11.0
+    is_quantifier: true
+    dwell_time_ms: 5.0
+    q1_pre_bias: 24.0
+    q3_pre_bias: 30.0
+    polarity: negative
+  - precursor_mz: 663.0
+    product_mz: 169.0
+    collision_energy: 27.0
+    is_quantifier: false
+    dwell_time_ms: 5.0
+    q1_pre_bias: 20.0
+    q3_pre_bias: 13.0
+    polarity: negative
+  - precursor_mz: 663.0
+    product_mz: 269.0
+    collision_energy: 20.0
+    is_quantifier: false
+    dwell_time_ms: 5.0
+    q1_pre_bias: 20.0
+    q3_pre_bias: 20.0
+    polarity: negative
+  monoisotopic_mass: 663.9577
+- name: Perfluoro-n-tetradecanoic acid
+  abbreviation: PFTeDA
+  cas_number: 376-06-7
+  molecular_formula: C14HF27O2
+  molecular_weight: 714.11
+  retention_time_min: 6.9
+  rt_window_min: 1.0
+  internal_standard: M2PFTeDA-13C2
+  is_internal_standard: false
+  compound_class: PFCA
+  transitions:
+  - precursor_mz: 712.9
+    product_mz: 669.0
+    collision_energy: 12.0
+    is_quantifier: true
+    dwell_time_ms: 5.0
+    q1_pre_bias: 22.0
+    q3_pre_bias: 20.0
+    polarity: negative
+  - precursor_mz: 712.9
+    product_mz: 169.0
+    collision_energy: 29.0
+    is_quantifier: false
+    dwell_time_ms: 5.0
+    q1_pre_bias: 24.0
+    q3_pre_bias: 17.0
+    polarity: negative
+  - precursor_mz: 712.9
+    product_mz: 269.0
+    collision_energy: 20.0
+    is_quantifier: false
+    dwell_time_ms: 5.0
+    q1_pre_bias: 20.0
+    q3_pre_bias: 18.0
+    polarity: negative
+  monoisotopic_mass: 713.9545
+- name: Potassium perfluoro-1-butanesulfonate
+  abbreviation: PFBS
+  cas_number: 29420-49-3
+  molecular_formula: C4HF9O3S
+  molecular_weight: 300.1
+  retention_time_min: 3.6
+  rt_window_min: 1.0
+  internal_standard: M3PFBS-13C3
+  is_internal_standard: false
+  compound_class: PFSA
+  transitions:
+  - precursor_mz: 298.9
+    product_mz: 80.0
+    collision_energy: 36.0
+    is_quantifier: true
+    dwell_time_ms: 6.0
+    q1_pre_bias: 12.0
+    q3_pre_bias: 17.0
+    polarity: negative
+  - precursor_mz: 298.9
+    product_mz: 99.0
+    collision_energy: 30.0
+    is_quantifier: false
+    dwell_time_ms: 6.0
+    q1_pre_bias: 15.0
+    q3_pre_bias: 19.0
+    polarity: negative
+  monoisotopic_mass: 299.9502
+- name: Sodium perfluoro-1-pentanesulfonate
+  abbreviation: PFPeS
+  cas_number: N/A
+  molecular_formula: C5HF11O3S
+  molecular_weight: 350.1
+  retention_time_min: 4.5
+  rt_window_min: 1.0
+  internal_standard: M3PFBS-13C3
+  is_internal_standard: false
+  compound_class: PFSA
+  transitions:
+  - precursor_mz: 348.9
+    product_mz: 80.0
+    collision_energy: 38.0
+    is_quantifier: true
+    dwell_time_ms: 5.0
+    q1_pre_bias: 10.0
+    q3_pre_bias: 18.0
+    polarity: negative
+  - precursor_mz: 348.9
+    product_mz: 99.0
+    collision_energy: 30.0
+    is_quantifier: false
+    dwell_time_ms: 5.0
+    q1_pre_bias: 11.0
+    q3_pre_bias: 19.0
+    polarity: negative
+  monoisotopic_mass: 349.947
+- name: Potassium perfluorohexanesulfonate
+  abbreviation: PFHxS
+  cas_number: 432-50-7
+  molecular_formula: C6HF13O3S
+  molecular_weight: 400.11
+  retention_time_min: 5.0
+  rt_window_min: 1.0
+  internal_standard: M3PFHxS-13C3
+  is_internal_standard: false
+  compound_class: PFSA
+  transitions:
+  - precursor_mz: 398.9
+    product_mz: 80.0
+    collision_energy: 44.0
+    is_quantifier: true
+    dwell_time_ms: 5.0
+    q1_pre_bias: 23.0
+    q3_pre_bias: 15.0
+    polarity: negative
+  - precursor_mz: 398.9
+    product_mz: 99.0
+    collision_energy: 35.0
+    is_quantifier: false
+    dwell_time_ms: 5.0
+    q1_pre_bias: 19.0
+    q3_pre_bias: 20.0
+    polarity: negative
+  monoisotopic_mass: 399.9438
+- name: Sodium perfluoro-1-heptanesulfonate
+  abbreviation: PFHpS
+  cas_number: N/A
+  molecular_formula: C7HF15O3S
+  molecular_weight: 450.12
+  retention_time_min: 5.5
+  rt_window_min: 1.0
+  internal_standard: M8PFOS-13C8
+  is_internal_standard: false
+  compound_class: PFSA
+  transitions:
+  - precursor_mz: 448.9
+    product_mz: 80.0
+    collision_energy: 49.0
+    is_quantifier: true
+    dwell_time_ms: 5.0
+    q1_pre_bias: 11.0
+    q3_pre_bias: 18.0
+    polarity: negative
+  - precursor_mz: 448.9
+    product_mz: 99.0
+    collision_energy: 38.0
+    is_quantifier: false
+    dwell_time_ms: 5.0
+    q1_pre_bias: 23.0
+    q3_pre_bias: 10.0
+    polarity: negative
+  monoisotopic_mass: 449.9406
+- name: Potassium perfluorooctanesulfonate
+  abbreviation: PFOS
+  cas_number: 4021-47-0
+  molecular_formula: C8HF17O3S
+  molecular_weight: 500.13
+  retention_time_min: 5.4
+  rt_window_min: 1.0
+  internal_standard: M8PFOS-13C8
+  is_internal_standard: false
+  compound_class: PFSA
+  transitions:
+  - precursor_mz: 498.9
+    product_mz: 80.0
+    collision_energy: 53.0
+    is_quantifier: true
+    dwell_time_ms: 5.0
+    q1_pre_bias: 20.0
+    q3_pre_bias: 16.0
+    polarity: negative
+  - precursor_mz: 498.9
+    product_mz: 99.0
+    collision_energy: 41.0
+    is_quantifier: false
+    dwell_time_ms: 5.0
+    q1_pre_bias: 21.0
+    q3_pre_bias: 23.0
+    polarity: negative
+  monoisotopic_mass: 499.9374
+- name: Sodium perfluoro-1-nonanesulfonate
+  abbreviation: PFNS
+  cas_number: 98789-57-2
+  molecular_formula: C9HF19O3S
+  molecular_weight: 550.13
+  retention_time_min: 6.1
+  rt_window_min: 1.0
+  internal_standard: M8PFOS-13C8
+  is_internal_standard: false
+  compound_class: PFSA
+  transitions:
+  - precursor_mz: 548.9
+    product_mz: 80.0
+    collision_energy: 50.0
+    is_quantifier: true
+    dwell_time_ms: 5.0
+    q1_pre_bias: 30.0
+    q3_pre_bias: 10.0
+    polarity: negative
+  - precursor_mz: 548.9
+    product_mz: 99.0
+    collision_energy: 45.0
+    is_quantifier: false
+    dwell_time_ms: 5.0
+    q1_pre_bias: 26.0
+    q3_pre_bias: 22.0
+    polarity: negative
+  monoisotopic_mass: 549.9342
+- name: Sodium perfluoro-1-decanesulfonate
+  abbreviation: PFDS
+  cas_number: 2806-15-7
+  molecular_formula: C10HF21O3S
+  molecular_weight: 600.14
+  retention_time_min: 6.4
+  rt_window_min: 1.0
+  internal_standard: M8PFOS-13C8
+  is_internal_standard: false
+  compound_class: PFSA
+  transitions:
+  - precursor_mz: 598.9
+    product_mz: 80.0
+    collision_energy: 52.0
+    is_quantifier: true
+    dwell_time_ms: 5.0
+    q1_pre_bias: 30.0
+    q3_pre_bias: 23.0
+    polarity: negative
+  - precursor_mz: 598.9
+    product_mz: 99.0
+    collision_energy: 46.0
+    is_quantifier: false
+    dwell_time_ms: 5.0
+    q1_pre_bias: 30.0
+    q3_pre_bias: 19.0
+    polarity: negative
+  monoisotopic_mass: 599.931
+- name: Sodium 1H,1H,2H,2H-perfluoro-1-hexanesulfonate
+  abbreviation: 4:2-FTS
+  cas_number: N/A
+  molecular_formula: C6H5F9O3S
+  molecular_weight: 328.15
+  retention_time_min: 4.2
+  rt_window_min: 1.0
+  internal_standard: M2-4:2-FTS-13C2
+  is_internal_standard: false
+  compound_class: FTS
+  transitions:
+  - precursor_mz: 327.0
+    product_mz: 307.0
+    collision_energy: 18.0
+    is_quantifier: true
+    dwell_time_ms: 5.0
+    q1_pre_bias: 16.0
+    q3_pre_bias: 22.0
+    polarity: negative
+  - precursor_mz: 327.0
+    product_mz: 81.0
+    collision_energy: 32.0
+    is_quantifier: false
+    dwell_time_ms: 5.0
+    q1_pre_bias: 14.0
+    q3_pre_bias: 17.0
+    polarity: negative
+  monoisotopic_mass: 327.9816
+- name: Sodium 1H,1H,2H,2H-perfluoro-1-octanesulfonate
+  abbreviation: 6:2-FTS
+  cas_number: N/A
+  molecular_formula: C8H5F13O3S
+  molecular_weight: 428.17
+  retention_time_min: 5.2
+  rt_window_min: 1.0
+  internal_standard: M2-6:2-FTS-13C2
+  is_internal_standard: false
+  compound_class: FTS
+  transitions:
+  - precursor_mz: 427.0
+    product_mz: 407.0
+    collision_energy: 24.0
+    is_quantifier: true
+    dwell_time_ms: 5.0
+    q1_pre_bias: 20.0
+    q3_pre_bias: 27.0
+    polarity: negative
+  - precursor_mz: 427.0
+    product_mz: 81.0
+    collision_energy: 31.0
+    is_quantifier: false
+    dwell_time_ms: 5.0
+    q1_pre_bias: 14.0
+    q3_pre_bias: 20.0
+    polarity: negative
+  monoisotopic_mass: 427.9752
+- name: Sodium 1H,1H,2H,2H-perfluoro-1-decanesulfonate
+  abbreviation: 8:2-FTS
+  cas_number: N/A
+  molecular_formula: C10H5F17O3S
+  molecular_weight: 528.18
+  retention_time_min: 5.9
+  rt_window_min: 1.0
+  internal_standard: M2-8:2-FTS-13C2
+  is_internal_standard: false
+  compound_class: FTS
+  transitions:
+  - precursor_mz: 527.0
+    product_mz: 507.0
+    collision_energy: 23.0
+    is_quantifier: true
+    dwell_time_ms: 5.0
+    q1_pre_bias: 28.0
+    q3_pre_bias: 38.0
+    polarity: negative
+  - precursor_mz: 527.0
+    product_mz: 81.0
+    collision_energy: 35.0
+    is_quantifier: false
+    dwell_time_ms: 5.0
+    q1_pre_bias: 22.0
+    q3_pre_bias: 18.0
+    polarity: negative
+  monoisotopic_mass: 527.9688
+- name: Perfluoro-1-octanesulfonamide
+  abbreviation: FOSA
+  cas_number: 754-91-6
+  molecular_formula: C8H2F17NO2S
+  molecular_weight: 499.14
+  retention_time_min: 6.5
+  rt_window_min: 1.0
+  internal_standard: M8FOSA
+  is_internal_standard: false
+  compound_class: FOSA
+  transitions:
+  - precursor_mz: 497.9
+    product_mz: 78.0
+    collision_energy: 32.0
+    is_quantifier: true
+    dwell_time_ms: 5.0
+    q1_pre_bias: 22.0
+    q3_pre_bias: 17.0
+    polarity: negative
+  - precursor_mz: 497.9
+    product_mz: 119.0
+    collision_energy: 21.0
+    is_quantifier: false
+    dwell_time_ms: 5.0
+    q1_pre_bias: 14.0
+    q3_pre_bias: 27.0
+    polarity: negative
+  - precursor_mz: 497.9
+    product_mz: 169.0
+    collision_energy: 17.0
+    is_quantifier: false
+    dwell_time_ms: 5.0
+    q1_pre_bias: 24.0
+    q3_pre_bias: 27.0
+    polarity: negative
+  monoisotopic_mass: 498.9534
+- name: N-methylperfluoro-1-octanesulfonamidoacetic acid
+  abbreviation: N-MeFOSAA
+  cas_number: 2355-31-9
+  molecular_formula: C11H6F17NO4S
+  molecular_weight: 571.22
+  retention_time_min: 6.1
+  rt_window_min: 1.0
+  internal_standard: MeFOSAA-d3
+  is_internal_standard: false
+  compound_class: FOSAA
+  transitions:
+  - precursor_mz: 570.0
+    product_mz: 419.0
+    collision_energy: 18.0
+    is_quantifier: true
+    dwell_time_ms: 5.0
+    q1_pre_bias: 34.0
+    q3_pre_bias: 30.0
+    polarity: negative
+  - precursor_mz: 570.0
+    product_mz: 512.0
+    collision_energy: 23.0
+    is_quantifier: false
+    dwell_time_ms: 5.0
+    q1_pre_bias: 20.0
+    q3_pre_bias: 38.0
+    polarity: negative
+  - precursor_mz: 570.0
+    product_mz: 483.0
+    collision_energy: 17.0
+    is_quantifier: false
+    dwell_time_ms: 5.0
+    q1_pre_bias: 28.0
+    q3_pre_bias: 21.0
+    polarity: negative
+  monoisotopic_mass: 570.9746
+- name: N-ethylperfluoro-1-octanesulfonamidoacetic acid
+  abbreviation: N-EtFOSAA
+  cas_number: 2991-50-6
+  molecular_formula: C12H8F17NO4S
+  molecular_weight: 585.24
+  retention_time_min: 6.2
+  rt_window_min: 1.0
+  internal_standard: EtFOSAA-d5
+  is_internal_standard: false
+  compound_class: FOSAA
+  transitions:
+  - precursor_mz: 584.0
+    product_mz: 419.0
+    collision_energy: 20.0
+    is_quantifier: true
+    dwell_time_ms: 5.0
+    q1_pre_bias: 28.0
+    q3_pre_bias: 19.0
+    polarity: negative
+  - precursor_mz: 584.0
+    product_mz: 526.0
+    collision_energy: 17.0
+    is_quantifier: false
+    dwell_time_ms: 5.0
+    q1_pre_bias: 30.0
+    q3_pre_bias: 32.0
+    polarity: negative
+  - precursor_mz: 584.0
+    product_mz: 483.0
+    collision_energy: 14.0
+    is_quantifier: false
+    dwell_time_ms: 5.0
+    q1_pre_bias: 24.0
+    q3_pre_bias: 19.0
+    polarity: negative
+  monoisotopic_mass: 584.9902
+- name: Hexafluoropropylene oxide dimer acid
+  abbreviation: HFPO-DA
+  cas_number: 13252-13-6
+  molecular_formula: C6HF11O3
+  molecular_weight: 330.05
+  retention_time_min: 1.8
+  rt_window_min: 1.0
+  internal_standard: M3HFPO-DA
+  is_internal_standard: false
+  compound_class: ether
+  transitions:
+  - precursor_mz: 329.0
+    product_mz: 285.0
+    collision_energy: 10.0
+    is_quantifier: true
+    dwell_time_ms: 100.0
+    q1_pre_bias: 0.0
+    q3_pre_bias: 0.0
+    polarity: negative
+  - precursor_mz: 329.0
+    product_mz: 169.0
+    collision_energy: 18.0
+    is_quantifier: false
+    dwell_time_ms: 100.0
+    q1_pre_bias: 0.0
+    q3_pre_bias: 0.0
+    polarity: negative
+  monoisotopic_mass: 329.975
+- name: Sodium dodecafluoro-3H-4,8-dioxanonanoate
+  abbreviation: ADONA
+  cas_number: 958445-44-8
+  molecular_formula: C7H2F12O4
+  molecular_weight: 378.07
+  retention_time_min: 2.3
+  rt_window_min: 1.0
+  internal_standard: M3HFPO-DA
+  is_internal_standard: false
+  compound_class: ether
+  transitions:
+  - precursor_mz: 377.0
+    product_mz: 251.0
+    collision_energy: 14.0
+    is_quantifier: true
+    dwell_time_ms: 100.0
+    q1_pre_bias: 0.0
+    q3_pre_bias: 0.0
+    polarity: negative
+  - precursor_mz: 377.0
+    product_mz: 85.0
+    collision_energy: 28.0
+    is_quantifier: false
+    dwell_time_ms: 100.0
+    q1_pre_bias: 0.0
+    q3_pre_bias: 0.0
+    polarity: negative
+  monoisotopic_mass: 377.9761
+- name: Perfluoro-n-[13C4]butanoic acid
+  abbreviation: MPFBA-13C4
+  cas_number: N/A
+  molecular_formula: 13C4HF7O2
+  molecular_weight: 218.04
+  retention_time_min: 1.2
+  rt_window_min: 1.0
+  internal_standard: null
+  is_internal_standard: true
+  compound_class: PFCA-IS
+  transitions:
+  - precursor_mz: 217.0
+    product_mz: 172.0
+    collision_energy: 10.0
+    is_quantifier: true
+    dwell_time_ms: 17.0
+    q1_pre_bias: 28.0
+    q3_pre_bias: 18.0
+    polarity: negative
+  monoisotopic_mass: 217.9999
+- name: Perfluoro-n-[13C5]pentanoic acid
+  abbreviation: M5PFPeA-13C5
+  cas_number: N/A
+  molecular_formula: 13C5HF9O2
+  molecular_weight: 269.05
+  retention_time_min: 2.6
+  rt_window_min: 1.0
+  internal_standard: null
+  is_internal_standard: true
+  compound_class: PFCA-IS
+  transitions:
+  - precursor_mz: 268.0
+    product_mz: 223.0
+    collision_energy: 8.0
+    is_quantifier: true
+    dwell_time_ms: 7.0
+    q1_pre_bias: 21.0
+    q3_pre_bias: 16.0
+    polarity: negative
+  monoisotopic_mass: 269.0
+- name: Sodium perfluoro-1-[2,3,4-13C3]butanesulfonate
+  abbreviation: M3PFBS-13C3
+  cas_number: N/A
+  molecular_formula: 13C3CHF9O3S
+  molecular_weight: 303.1
+  retention_time_min: 3.6
+  rt_window_min: 1.0
+  internal_standard: null
+  is_internal_standard: true
+  compound_class: PFSA-IS
+  transitions:
+  - precursor_mz: 302.0
+    product_mz: 80.0
+    collision_energy: 36.0
+    is_quantifier: true
+    dwell_time_ms: 6.0
+    q1_pre_bias: 18.0
+    q3_pre_bias: 15.0
+    polarity: negative
+  - precursor_mz: 302.0
+    product_mz: 99.0
+    collision_energy: 30.0
+    is_quantifier: false
+    dwell_time_ms: 6.0
+    q1_pre_bias: 15.0
+    q3_pre_bias: 19.0
+    polarity: negative
+  monoisotopic_mass: 302.9603
+- name: Perfluoro-n-[1,2,3,4,6-13C5]hexanoic acid
+  abbreviation: M5PFHxA-13C5
+  cas_number: N/A
+  molecular_formula: 13C5CHF11O2
+  molecular_weight: 319.05
+  retention_time_min: 4.3
+  rt_window_min: 1.0
+  internal_standard: null
+  is_internal_standard: true
+  compound_class: PFCA-IS
+  transitions:
+  - precursor_mz: 318.0
+    product_mz: 273.0
+    collision_energy: 8.0
+    is_quantifier: true
+    dwell_time_ms: 5.0
+    q1_pre_bias: 24.0
+    q3_pre_bias: 18.0
+    polarity: negative
+  - precursor_mz: 318.0
+    product_mz: 119.0
+    collision_energy: 19.0
+    is_quantifier: false
+    dwell_time_ms: 5.0
+    q1_pre_bias: 15.0
+    q3_pre_bias: 27.0
+    polarity: negative
+  monoisotopic_mass: 318.9968
+- name: Sodium 1H,1H,2H,2H-perfluoro-1-[1,2-13C2]hexanesulfonate
+  abbreviation: M2-4:2-FTS-13C2
+  cas_number: N/A
+  molecular_formula: 13C2C4H5F9O3S
+  molecular_weight: 330.15
+  retention_time_min: 4.2
+  rt_window_min: 1.0
+  internal_standard: null
+  is_internal_standard: true
+  compound_class: FTS-IS
+  transitions:
+  - precursor_mz: 329.0
+    product_mz: 309.0
+    collision_energy: 18.0
+    is_quantifier: true
+    dwell_time_ms: 5.0
+    q1_pre_bias: 12.0
+    q3_pre_bias: 15.0
+    polarity: negative
+  - precursor_mz: 329.0
+    product_mz: 81.0
+    collision_energy: 32.0
+    is_quantifier: false
+    dwell_time_ms: 5.0
+    q1_pre_bias: 29.0
+    q3_pre_bias: 19.0
+    polarity: negative
+  monoisotopic_mass: 329.9883
+- name: Perfluoro-n-[1,2,3,4-13C4]heptanoic acid
+  abbreviation: M4PFHpA-13C4
+  cas_number: N/A
+  molecular_formula: 13C4C3HF13O2
+  molecular_weight: 368.06
+  retention_time_min: 4.9
+  rt_window_min: 1.0
+  internal_standard: null
+  is_internal_standard: true
+  compound_class: PFCA-IS
+  transitions:
+  - precursor_mz: 367.0
+    product_mz: 322.0
+    collision_energy: 9.0
+    is_quantifier: true
+    dwell_time_ms: 5.0
+    q1_pre_bias: 20.0
+    q3_pre_bias: 26.0
+    polarity: negative
+  - precursor_mz: 367.0
+    product_mz: 171.0
+    collision_energy: 15.0
+    is_quantifier: false
+    dwell_time_ms: 5.0
+    q1_pre_bias: 23.0
+    q3_pre_bias: 19.0
+    polarity: negative
+  monoisotopic_mass: 367.9903
+- name: Sodium perfluoro-1-[1,2,3-13C3]hexanesulfonate
+  abbreviation: M3PFHxS-13C3
+  cas_number: N/A
+  molecular_formula: 13C3C3HF13O3S
+  molecular_weight: 403.11
+  retention_time_min: 5.0
+  rt_window_min: 1.0
+  internal_standard: null
+  is_internal_standard: true
+  compound_class: PFSA-IS
+  transitions:
+  - precursor_mz: 401.9
+    product_mz: 80.0
+    collision_energy: 44.0
+    is_quantifier: true
+    dwell_time_ms: 5.0
+    q1_pre_bias: 21.0
+    q3_pre_bias: 28.0
+    polarity: negative
+  - precursor_mz: 401.9
+    product_mz: 99.0
+    collision_energy: 35.0
+    is_quantifier: false
+    dwell_time_ms: 5.0
+    q1_pre_bias: 12.0
+    q3_pre_bias: 20.0
+    polarity: negative
+  monoisotopic_mass: 402.9539
+- name: Perfluoro-n-[13C8]octanoic acid
+  abbreviation: M8PFOA-13C8
+  cas_number: N/A
+  molecular_formula: 13C8HF15O2
+  molecular_weight: 422.07
+  retention_time_min: 5.5
+  rt_window_min: 1.0
+  internal_standard: null
+  is_internal_standard: true
+  compound_class: PFCA-IS
+  transitions:
+  - precursor_mz: 421.0
+    product_mz: 376.0
+    collision_energy: 10.0
+    is_quantifier: true
+    dwell_time_ms: 5.0
+    q1_pre_bias: 22.0
+    q3_pre_bias: 20.0
+    polarity: negative
+  - precursor_mz: 421.0
+    product_mz: 171.0
+    collision_energy: 11.0
+    is_quantifier: false
+    dwell_time_ms: 5.0
+    q1_pre_bias: 24.0
+    q3_pre_bias: 15.0
+    polarity: negative
+  - precursor_mz: 421.0
+    product_mz: 223.0
+    collision_energy: 15.0
+    is_quantifier: false
+    dwell_time_ms: 5.0
+    q1_pre_bias: 13.0
+    q3_pre_bias: 22.0
+    polarity: negative
+  monoisotopic_mass: 422.0005
+- name: Sodium 1H,1H,2H,2H-perfluoro-1-[1,2-13C2]octanesulfonate
+  abbreviation: M2-6:2-FTS-13C2
+  cas_number: N/A
+  molecular_formula: 13C2C6H5F13O3S
+  molecular_weight: 430.17
+  retention_time_min: 5.2
+  rt_window_min: 1.0
+  internal_standard: null
+  is_internal_standard: true
+  compound_class: FTS-IS
+  transitions:
+  - precursor_mz: 429.0
+    product_mz: 409.0
+    collision_energy: 24.0
+    is_quantifier: true
+    dwell_time_ms: 5.0
+    q1_pre_bias: 12.0
+    q3_pre_bias: 30.0
+    polarity: negative
+  - precursor_mz: 429.0
+    product_mz: 81.0
+    collision_energy: 31.0
+    is_quantifier: false
+    dwell_time_ms: 5.0
+    q1_pre_bias: 17.0
+    q3_pre_bias: 28.0
+    polarity: negative
+  monoisotopic_mass: 429.9819
+- name: Perfluoro-n-[13C9]nonanoic acid
+  abbreviation: M9PFNA-13C9
+  cas_number: N/A
+  molecular_formula: 13C9HF17O2
+  molecular_weight: 473.08
+  retention_time_min: 5.8
+  rt_window_min: 1.0
+  internal_standard: null
+  is_internal_standard: true
+  compound_class: PFCA-IS
+  transitions:
+  - precursor_mz: 472.0
+    product_mz: 427.0
+    collision_energy: 12.0
+    is_quantifier: true
+    dwell_time_ms: 5.0
+    q1_pre_bias: 20.0
+    q3_pre_bias: 30.0
+    polarity: negative
+  - precursor_mz: 472.0
+    product_mz: 423.0
+    collision_energy: 17.0
+    is_quantifier: false
+    dwell_time_ms: 5.0
+    q1_pre_bias: 15.0
+    q3_pre_bias: 15.0
+    polarity: negative
+  - precursor_mz: 472.0
+    product_mz: 171.0
+    collision_energy: 22.0
+    is_quantifier: false
+    dwell_time_ms: 5.0
+    q1_pre_bias: 15.0
+    q3_pre_bias: 15.0
+    polarity: negative
+  monoisotopic_mass: 473.0006
+- name: Perfluoro-1-[13C8]octanesulfonamide
+  abbreviation: M8FOSA
+  cas_number: N/A
+  molecular_formula: 13C8H2F17NO2S
+  molecular_weight: 507.14
+  retention_time_min: 6.5
+  rt_window_min: 1.0
+  internal_standard: null
+  is_internal_standard: true
+  compound_class: FOSA-IS
+  transitions:
+  - precursor_mz: 506.0
+    product_mz: 78.0
+    collision_energy: 32.0
+    is_quantifier: true
+    dwell_time_ms: 5.0
+    q1_pre_bias: 24.0
+    q3_pre_bias: 14.0
+    polarity: negative
+  - precursor_mz: 506.0
+    product_mz: 172.0
+    collision_energy: 57.0
+    is_quantifier: false
+    dwell_time_ms: 5.0
+    q1_pre_bias: 15.0
+    q3_pre_bias: 15.0
+    polarity: negative
+  monoisotopic_mass: 506.9802
+- name: Sodium perfluoro-1-[13C8]octanesulfonate
+  abbreviation: M8PFOS-13C8
+  cas_number: N/A
+  molecular_formula: 13C8HF17O3S
+  molecular_weight: 508.13
+  retention_time_min: 5.4
+  rt_window_min: 1.0
+  internal_standard: null
+  is_internal_standard: true
+  compound_class: PFSA-IS
+  transitions:
+  - precursor_mz: 507.0
+    product_mz: 80.0
+    collision_energy: 53.0
+    is_quantifier: true
+    dwell_time_ms: 5.0
+    q1_pre_bias: 36.0
+    q3_pre_bias: 29.0
+    polarity: negative
+  - precursor_mz: 507.0
+    product_mz: 99.0
+    collision_energy: 41.0
+    is_quantifier: false
+    dwell_time_ms: 5.0
+    q1_pre_bias: 40.0
+    q3_pre_bias: 15.0
+    polarity: negative
+  monoisotopic_mass: 507.9642
+- name: Perfluoro-n-[1,2,3,4,5,6-13C6]decanoic acid
+  abbreviation: M6PFDA-13C6
+  cas_number: N/A
+  molecular_formula: 13C6C4HF19O2
+  molecular_weight: 520.08
+  retention_time_min: 6.1
+  rt_window_min: 1.0
+  internal_standard: null
+  is_internal_standard: true
+  compound_class: PFCA-IS
+  transitions:
+  - precursor_mz: 519.0
+    product_mz: 474.0
+    collision_energy: 10.0
+    is_quantifier: true
+    dwell_time_ms: 5.0
+    q1_pre_bias: 26.0
+    q3_pre_bias: 28.0
+    polarity: negative
+  - precursor_mz: 519.0
+    product_mz: 219.0
+    collision_energy: 16.0
+    is_quantifier: false
+    dwell_time_ms: 5.0
+    q1_pre_bias: 20.0
+    q3_pre_bias: 15.0
+    polarity: negative
+  - precursor_mz: 519.0
+    product_mz: 169.0
+    collision_energy: 22.0
+    is_quantifier: false
+    dwell_time_ms: 5.0
+    q1_pre_bias: 22.0
+    q3_pre_bias: 19.0
+    polarity: negative
+  monoisotopic_mass: 519.9874
+- name: Sodium 1H,1H,2H,2H-perfluoro-1-[1,2-13C2]decanesulfonate
+  abbreviation: M2-8:2-FTS-13C2
+  cas_number: N/A
+  molecular_formula: 13C2C8H5F17O3S
+  molecular_weight: 530.18
+  retention_time_min: 5.9
+  rt_window_min: 1.0
+  internal_standard: null
+  is_internal_standard: true
+  compound_class: FTS-IS
+  transitions:
+  - precursor_mz: 529.0
+    product_mz: 509.0
+    collision_energy: 23.0
+    is_quantifier: true
+    dwell_time_ms: 5.0
+    q1_pre_bias: 22.0
+    q3_pre_bias: 28.0
+    polarity: negative
+  - precursor_mz: 529.0
+    product_mz: 81.0
+    collision_energy: 35.0
+    is_quantifier: false
+    dwell_time_ms: 5.0
+    q1_pre_bias: 22.0
+    q3_pre_bias: 20.0
+    polarity: negative
+  monoisotopic_mass: 529.9755
+- name: Perfluoro-n-[1,2,3,4,5,6,7-13C7]undecanoic acid
+  abbreviation: M7PFUdA-13C7
+  cas_number: N/A
+  molecular_formula: 13C7C4HF21O2
+  molecular_weight: 571.09
+  retention_time_min: 6.4
+  rt_window_min: 1.0
+  internal_standard: null
+  is_internal_standard: true
+  compound_class: PFCA-IS
+  transitions:
+  - precursor_mz: 570.0
+    product_mz: 525.0
+    collision_energy: 9.0
+    is_quantifier: true
+    dwell_time_ms: 5.0
+    q1_pre_bias: 26.0
+    q3_pre_bias: 28.0
+    polarity: negative
+  - precursor_mz: 570.0
+    product_mz: 269.0
+    collision_energy: 18.0
+    is_quantifier: false
+    dwell_time_ms: 5.0
+    q1_pre_bias: 36.0
+    q3_pre_bias: 13.0
+    polarity: negative
+  - precursor_mz: 570.0
+    product_mz: 219.0
+    collision_energy: 23.0
+    is_quantifier: false
+    dwell_time_ms: 5.0
+    q1_pre_bias: 20.0
+    q3_pre_bias: 10.0
+    polarity: negative
+  monoisotopic_mass: 570.9875
+- name: N-methyl-d3-perfluoro-1-octanesulfonamidoacetic acid
+  abbreviation: MeFOSAA-d3
+  cas_number: N/A
+  molecular_formula: C11H3D3F17NO4S
+  molecular_weight: 574.22
+  retention_time_min: 6.1
+  rt_window_min: 1.0
+  internal_standard: null
+  is_internal_standard: true
+  compound_class: FOSAA-IS
+  transitions:
+  - precursor_mz: 573.0
+    product_mz: 419.0
+    collision_energy: 18.0
+    is_quantifier: true
+    dwell_time_ms: 5.0
+    q1_pre_bias: 26.0
+    q3_pre_bias: 12.0
+    polarity: negative
+  - precursor_mz: 573.0
+    product_mz: 515.0
+    collision_energy: 27.0
+    is_quantifier: false
+    dwell_time_ms: 5.0
+    q1_pre_bias: 15.0
+    q3_pre_bias: 24.0
+    polarity: negative
+  - precursor_mz: 573.0
+    product_mz: 483.0
+    collision_energy: 28.0
+    is_quantifier: false
+    dwell_time_ms: 5.0
+    q1_pre_bias: 40.0
+    q3_pre_bias: 29.0
+    polarity: negative
+  monoisotopic_mass: 573.9934
+- name: N-ethyl-d5-perfluoro-1-octanesulfonamidoacetic acid
+  abbreviation: EtFOSAA-d5
+  cas_number: N/A
+  molecular_formula: C12H3D5F17NO4S
+  molecular_weight: 590.24
+  retention_time_min: 6.2
+  rt_window_min: 1.0
+  internal_standard: null
+  is_internal_standard: true
+  compound_class: FOSAA-IS
+  transitions:
+  - precursor_mz: 589.0
+    product_mz: 419.0
+    collision_energy: 20.0
+    is_quantifier: true
+    dwell_time_ms: 5.0
+    q1_pre_bias: 32.0
+    q3_pre_bias: 22.0
+    polarity: negative
+  - precursor_mz: 589.0
+    product_mz: 531.0
+    collision_energy: 31.0
+    is_quantifier: false
+    dwell_time_ms: 5.0
+    q1_pre_bias: 34.0
+    q3_pre_bias: 38.0
+    polarity: negative
+  - precursor_mz: 589.0
+    product_mz: 483.0
+    collision_energy: 17.0
+    is_quantifier: false
+    dwell_time_ms: 5.0
+    q1_pre_bias: 24.0
+    q3_pre_bias: 29.0
+    polarity: negative
+  monoisotopic_mass: 590.0216
+- name: Perfluoro-n-[1,2-13C2]dodecanoic acid
+  abbreviation: M2PFDoA-13C2
+  cas_number: N/A
+  molecular_formula: 13C2C10HF23O2
+  molecular_weight: 616.1
+  retention_time_min: 6.6
+  rt_window_min: 1.0
+  internal_standard: null
+  is_internal_standard: true
+  compound_class: PFCA-IS
+  transitions:
+  - precursor_mz: 615.0
+    product_mz: 570.0
+    collision_energy: 12.0
+    is_quantifier: true
+    dwell_time_ms: 5.0
+    q1_pre_bias: 22.0
+    q3_pre_bias: 22.0
+    polarity: negative
+  - precursor_mz: 615.0
+    product_mz: 169.0
+    collision_energy: 17.0
+    is_quantifier: false
+    dwell_time_ms: 5.0
+    q1_pre_bias: 24.0
+    q3_pre_bias: 26.0
+    polarity: negative
+  - precursor_mz: 615.0
+    product_mz: 269.0
+    collision_energy: 21.0
+    is_quantifier: false
+    dwell_time_ms: 5.0
+    q1_pre_bias: 38.0
+    q3_pre_bias: 26.0
+    polarity: negative
+  monoisotopic_mass: 615.9676
+- name: Perfluoro-n-[1,2-13C2]tetradecanoic acid
+  abbreviation: M2PFTeDA-13C2
+  cas_number: N/A
+  molecular_formula: 13C2C12HF27O2
+  molecular_weight: 716.11
+  retention_time_min: 6.9
+  rt_window_min: 1.0
+  internal_standard: null
+  is_internal_standard: true
+  compound_class: PFCA-IS
+  transitions:
+  - precursor_mz: 715.0
+    product_mz: 670.0
+    collision_energy: 12.0
+    is_quantifier: true
+    dwell_time_ms: 5.0
+    q1_pre_bias: 20.0
+    q3_pre_bias: 0.0
+    polarity: negative
+  - precursor_mz: 715.0
+    product_mz: 169.0
+    collision_energy: 20.0
+    is_quantifier: false
+    dwell_time_ms: 5.0
+    q1_pre_bias: 20.0
+    q3_pre_bias: 0.0
+    polarity: negative
+  - precursor_mz: 715.0
+    product_mz: 269.0
+    collision_energy: 33.0
+    is_quantifier: false
+    dwell_time_ms: 5.0
+    q1_pre_bias: 20.0
+    q3_pre_bias: 0.0
+    polarity: negative
+  monoisotopic_mass: 715.9612
+- name: Tetrafluoro-2-(heptafluoropropoxy)-13C3-propanoic acid
+  abbreviation: M3HFPO-DA
+  cas_number: N/A
+  molecular_formula: 13C3C3HF11O3
+  molecular_weight: 333.05
+  retention_time_min: 1.8
+  rt_window_min: 1.0
+  internal_standard: null
+  is_internal_standard: true
+  compound_class: ether-IS
+  transitions:
+  - precursor_mz: 332.0
+    product_mz: 287.0
+    collision_energy: 10.0
+    is_quantifier: true
+    dwell_time_ms: 100.0
+    q1_pre_bias: 0.0
+    q3_pre_bias: 0.0
+    polarity: negative
+  monoisotopic_mass: 332.985

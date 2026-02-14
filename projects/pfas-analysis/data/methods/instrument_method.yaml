@@ -1,0 +1,107 @@
+# Instrument Method: PFAS in Estuarine Waters
+# Source: SOP E-AED-PEB-SOP-1908-1 (July 2019), Appendix 7.1/7.2
+# Original instrument: Waters Acquity H-Class UPLC + Xevo TQD
+# Target instrument: Shimadzu LCMS-8060 with Nexera X2
+
+method_name: PFAS_estuarine_v1
+
+lc:
+  column:
+    name: Waters Acquity BEH C18
+    dimensions: 2.1 x 50 mm
+    particle_size_um: 1.7
+    temperature_c: 45.0  # SOP: 45°C (not 40)
+  mobile_phases:
+    # SOP: A = Water + 2mM AmAc, C = MeOH + 2mM AmAc
+    # Both channels have 2mM ammonium acetate added
+    a: 2 mM ammonium acetate in water
+    b: 2 mM ammonium acetate in methanol
+  gradient:
+    # Actual SOP gradient (Waters channels A/C mapped to Shimadzu A/B)
+    # Curve 6 = linear, Curve 1 = step
+    - time_min: 0.0
+      percent_b: 25.0
+      flow_ml_min: 0.4
+    - time_min: 0.5
+      percent_b: 25.0
+      flow_ml_min: 0.4
+    - time_min: 5.0
+      percent_b: 85.0
+      flow_ml_min: 0.4
+    - time_min: 5.1
+      percent_b: 95.0
+      flow_ml_min: 0.4
+    - time_min: 5.6
+      percent_b: 95.0
+      flow_ml_min: 0.4
+    - time_min: 7.0
+      percent_b: 95.0
+      flow_ml_min: 0.4
+    - time_min: 9.0
+      percent_b: 25.0
+      flow_ml_min: 0.4
+  injection_volume_ul: 40.0
+  autosampler:
+    cooler_temp_c: 5.0  # SOP: 5°C
+    rinse_mode: before and after aspiration
+    needle_wash_solvent: "MeOH + 0.1% formic acid"  # SOP wash solvent
+    needle_placement_mm: 5.0
+
+ms:
+  ionization_mode: ESI
+  polarity: negative
+
+  # --- Waters Xevo TQD source parameters (from SOP Appendix 7.2) ---
+  waters_tqd_reference:
+    capillary_kv: 1.00
+    cone_v: 35.0  # default; compound-specific cone in MRM table
+    source_temp_c: 150.0
+    desolvation_temp_c: 400.0
+    cone_gas_flow_l_hr: 30.0
+    desolvation_gas_flow_l_hr: 800.0
+
+  # --- Shimadzu 8060 source parameters (translated starting values) ---
+  source:
+    nebulizing_gas_flow_l_min: 3.0    # TQD desolvation gas → split between neb + heating
+    drying_gas_flow_l_min: 10.0       # TQD cone gas → drying gas
+    heating_gas_flow_l_min: 10.0      # 8060-specific, no TQD equivalent
+    interface_temp_c: 300.0           # Between TQD source temp and desolvation temp
+    dl_temp_c: 250.0                  # TQD desolvation temp → DL temp (lower on 8060)
+    heat_block_temp_c: 400.0          # TQD desolvation temp → heat block
+    interface_voltage_kv: 1.0         # TQD capillary = 1.00 kV (start here)
+  acquisition:
+    mode: MRM
+    mrm_optimization: compound
+    pause_time_ms: 3.0
+
+# Notes on translation from Waters Xevo TQD → Shimadzu 8060:
+#
+# Parameter mapping (with SOP values):
+#   Waters TQD               SOP Value     Shimadzu 8060          Start Value
+#   ----------               ---------     -------------          -----------
+#   Capillary voltage         1.00 kV      Interface voltage      1.0 kV
+#   Cone voltage              20-45 V      Q1 pre-rod bias        optimize
+#   Source temperature        150 °C       Heat block temp        400 °C *
+#   Desolvation temperature   400 °C       DL temperature         250 °C
+#   Cone gas flow             30 L/hr      Drying gas flow        10 L/min
+#   Desolvation gas flow      800 L/hr     Neb + Heating gas      3 + 10 L/min
+#
+#   * Heat block on 8060 serves a different function than TQD source temp.
+#     The 8060 heat block heats the spray; TQD source temp heats the source housing.
+#
+# Key differences:
+#   - TQD collision gas is argon; 8060 uses argon (same)
+#   - 8060 UFsweeper III → higher ion transmission → expect 10-20% lower CE
+#   - TQD cone voltage has no exact 8060 equivalent; use MRM optimization
+#   - SOP uses 5 ms dwell for most compounds; 8060 can go shorter (1-3 ms)
+#   - SOP gradient is faster than originally estimated: 4.5 min ramp (0.5-5.0 min)
+#   - All compounds elute between 1.1-6.9 min on the TQD
+#   - Run time 9.0 min total (including wash and re-equilibration)
+#
+# Recommended optimization sequence on 8060:
+#   1. Set up LC method first (gradient transfers directly)
+#   2. Infuse ~100 ng/mL individual or mixed standards
+#   3. Run LabSolutions MRM Optimization for CE, Q1/Q3 pre-bias
+#   4. Flow injection analysis to optimize source parameters
+#   5. LC-MRM to verify RTs and peak shape
+#   6. Compare sensitivity to TQD; adjust source if needed

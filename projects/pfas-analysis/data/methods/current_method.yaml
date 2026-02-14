@@ -1,0 +1,68 @@
+# PFAS Method - Shimadzu LCMS-8060
+# Adapted from Waters TQD method
+# Status: In optimization
+
+method_name: "PFAS_Shimadzu_8060_v1"
+date_modified: "2024-02"
+status: "optimization"
+
+standards:
+  native: "Wellington PFAC-24PAR"
+  internal_standard: "Wellington MPFAC-24ES"
+
+# Current acquisition parameters (as of optimization run)
+acquisition:
+  dwell_time_ms: 20          # reduced from 100 ms for more points/peak
+  pause_time_ms: 3           # default, unchanged
+  polarity: "negative"
+  ionization_mode: "ESI"
+  acquisition_mode: "MRM"
+  timed_mrm: true
+  events: 32
+  channels_per_event: 2      # approx, quant + qual
+
+  # Calculated metrics (with all windows overlapping)
+  # cycle_time_ms: ~1400     # 60 channels × 20ms + pauses
+  # points_per_peak: ~13     # for 18s peak width
+  # Target after RT window optimization: 20+ points/peak
+
+# MS source parameters (8060 defaults, to be optimized)
+ms_source:
+  interface_temp_c: 300
+  dl_temp_c: 250
+  heat_block_temp_c: 400
+  nebulizing_gas_l_min: 3.0
+  drying_gas_l_min: 10.0
+  heating_gas_l_min: 10.0
+  interface_voltage: "from_tune_file"
+
+# LC parameters (current)
+lc:
+  column:
+    name: ""                 # TBD
+    dimensions: ""           # TBD
+    particle_size_um: 0
+    temperature_c: 40
+  mobile_phase_a: "2 mM ammonium acetate in water"
+  mobile_phase_b: "methanol"
+  flow_rate_ml_min: 0.4
+  injection_volume_ul: 10
+  gradient: []               # TBD - to be filled after optimization
+
+# Autosampler (SIL-30AC)
+autosampler:
+  cooler_temp_c: 4
+  needle_wash: "50:50 MeOH:water"
+
+# System configuration
+system:
+  delay_column_installed: false
+  ptfe_minimized: false      # TODO
+
+# Optimization notes
+notes:
+  - "MRM optimization via sequential injection (not direct infusion)"
+  - "Initial peak widths ~18 seconds"
+  - "Reduced dwell time 100ms → 20ms to improve points per peak"
+  - "RT windows need tightening - currently all overlapping"
+  - "No system contamination observed yet without delay column"
