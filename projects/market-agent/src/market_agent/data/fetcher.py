@@ -1,0 +1,167 @@
+"""Market data fetcher — yfinance backend (no API key needed).
+
+Provides unified data access that can be swapped to MCP backends
+(Polygon, Alpha Vantage) when API keys are available.
+"""
+
+from datetime import datetime, timedelta
+from decimal import Decimal
+from typing import Optional
+
+import pandas as pd
+import yfinance as yf
+
+from .models import Bar, Fundamentals, Quote
+
+
+def get_bars(
+    symbol: str,
+    period: str = "6mo",
+    interval: str = "1d",
+    start: Optional[str] = None,
+    end: Optional[str] = None,
+) -> list[Bar]:
+    """Fetch OHLCV bars for a symbol.
+
+    Args:
+        symbol: Ticker symbol (e.g., "AAPL", "BTC-USD", "SPY")
+        period: yfinance period string ("1d", "5d", "1mo", "3mo", "6mo", "1y", "2y", "5y", "max")
+        interval: Bar interval ("1m", "5m", "15m", "1h", "1d", "1wk")
+        start: Start date string (overrides period if set)
+        end: End date string
+    """
+    ticker = yf.Ticker(symbol)
+    kwargs = {"interval": interval}
+    if start:
+        kwargs["start"] = start
+        if end:
+            kwargs["end"] = end
+    else:
+        kwargs["period"] = period
+
+    df = ticker.history(**kwargs)
+    if df.empty:
+        return []
+
+    bars = []
+    for ts, row in df.iterrows():
+        bars.append(Bar(
+            timestamp=ts.to_pydatetime(),
+            open=Decimal(str(round(row["Open"], 4))),
+            high=Decimal(str(round(row["High"], 4))),
+            low=Decimal(str(round(row["Low"], 4))),
+            close=Decimal(str(round(row["Close"], 4))),
+            volume=int(row["Volume"]),
+        ))
+    return bars
+
+
+def get_quote(symbol: str) -> Optional[Quote]:
+    """Fetch current quote for a symbol."""
+    ticker = yf.Ticker(symbol)
+    info = ticker.info
+    if not info or "bid" not in info:
+        # Fallback to last bar
+        df = ticker.history(period="1d", interval="1m")
+        if df.empty:
+            return None
+        last_row = df.iloc[-1]
+        return Quote(
+            symbol=symbol,
+            bid=Decimal(str(round(last_row["Close"], 4))),
+            ask=Decimal(str(round(last_row["Close"], 4))),
+            last=Decimal(str(round(last_row["Close"], 4))),
+            volume=int(last_row["Volume"]),
+            timestamp=df.index[-1].to_pydatetime(),
+        )
+
+    return Quote(
+        symbol=symbol,
+        bid=Decimal(str(info.get("bid", 0))),
+        ask=Decimal(str(info.get("ask", 0))),
+        last=Decimal(str(info.get("regularMarketPrice", info.get("previousClose", 0)))),
+        volume=int(info.get("regularMarketVolume", info.get("volume", 0))),
+        timestamp=datetime.utcnow(),
+    )
+
+
+def get_fundamentals(symbol: str) -> Optional[Fundamentals]:
+    """Fetch company fundamentals."""
+    ticker = yf.Ticker(symbol)
+    info = ticker.info
+    if not info or "symbol" not in info:
+        return None
+
+    cal = ticker.calendar
+    next_earnings = None
+    if isinstance(cal, pd.DataFrame) and "Earnings Date" in cal.columns:
+        next_earnings = cal["Earnings Date"].iloc[0]
+    elif isinstance(cal, dict) and "Earnings Date" in cal:
+        dates = cal["Earnings Date"]
+        if dates:
+            next_earnings = dates[0] if isinstance(dates, list) else dates
+
+    return Fundamentals(
+        symbol=symbol,
+        market_cap=info.get("marketCap"),
+        pe_ratio=info.get("trailingPE"),
+        forward_pe=info.get("forwardPE"),
+        peg_ratio=info.get("pegRatio"),
+        price_to_book=info.get("priceToBook"),
+        dividend_yield=info.get("dividendYield"),
+        eps=info.get("trailingEps"),
+        revenue=info.get("totalRevenue"),
+        profit_margin=info.get("profitMargins"),
+        debt_to_equity=info.get("debtToEquity"),
+        current_ratio=info.get("currentRatio"),
+        beta=info.get("beta"),
+        fifty_two_week_high=Decimal(str(info["fiftyTwoWeekHigh"])) if info.get("fiftyTwoWeekHigh") else None,
+        fifty_two_week_low=Decimal(str(info["fiftyTwoWeekLow"])) if info.get("fiftyTwoWeekLow") else None,
+        avg_volume=info.get("averageVolume"),
+        sector=info.get("sector"),
+        industry=info.get("industry"),
+        next_earnings=next_earnings,
+    )
+
+
+def get_multiple_bars(
+    symbols: list[str],
+    period: str = "6mo",
+    interval: str = "1d",
+) -> dict[str, list[Bar]]:
+    """Fetch bars for multiple symbols efficiently."""
+    df = yf.download(symbols, period=period, interval=interval, group_by="ticker", progress=False)
+    result = {}
+
+    if len(symbols) == 1:
+        # yf.download doesn't group by ticker for single symbol
+        sym = symbols[0]
+        result[sym] = []
+        for ts, row in df.iterrows():
+            if pd.notna(row["Close"]):
+                result[sym].append(Bar(
+                    timestamp=ts.to_pydatetime(),
+                    open=Decimal(str(round(row["Open"], 4))),
+                    high=Decimal(str(round(row["High"], 4))),
+                    low=Decimal(str(round(row["Low"], 4))),
+                    close=Decimal(str(round(row["Close"], 4))),
+                    volume=int(row["Volume"]),
+                ))
+    else:
+        for sym in symbols:
+            if sym not in df.columns.get_level_values(0):
+                continue
+            sym_df = df[sym]
+            result[sym] = []
+            for ts, row in sym_df.iterrows():
+                if pd.notna(row["Close"]):
+                    result[sym].append(Bar(
+                        timestamp=ts.to_pydatetime(),
+                        open=Decimal(str(round(row["Open"], 4))),
+                        high=Decimal(str(round(row["High"], 4))),
+                        low=Decimal(str(round(row["Low"], 4))),
+                        close=Decimal(str(round(row["Close"], 4))),
+                        volume=int(row["Volume"]),
+                    ))
+
+    return result

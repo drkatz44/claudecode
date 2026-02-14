@@ -15,6 +15,9 @@ docs/           # Cross-project documentation
 ## Active Projects
 - **chatgpt-import** - Import/index ChatGPT exports for search and Claude context
 - **youtube-notes** - Transcribe YouTube videos and generate meeting note summaries
+- **market-agent** - Financial markets analysis, screening, and trading signal generation
+- **tastytrade** - Options trading strategy and analysis platform via tasty-agent MCP
+- **pfas-analysis** - PFAS LC-MS/MS method adaptation (Waters→Shimadzu 8060) and data processing
 
 ## Conventions
 - Each project has its own CLAUDE.md with project-specific context

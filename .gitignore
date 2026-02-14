@@ -25,6 +25,7 @@ build/
 .env
 .env.local
 *.local
+.mcp.json
 
 # Testing/Coverage
 coverage/
