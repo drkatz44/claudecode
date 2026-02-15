@@ -4,14 +4,61 @@ Provides unified data access that can be swapped to MCP backends
 (Polygon, Alpha Vantage) when API keys are available.
 """
 
+import hashlib
+import json
 from datetime import datetime, timedelta
 from decimal import Decimal
+from pathlib import Path
 from typing import Optional
 
 import pandas as pd
 import yfinance as yf
 
 from .models import Bar, Fundamentals, Quote
+
+# --- File-based cache ---
+
+CACHE_DIR = Path.home() / ".market-agent" / "cache"
+
+
+def _cache_key(symbol: str, period: str, interval: str, start: Optional[str], end: Optional[str]) -> str:
+    key = f"{symbol}|{period}|{interval}|{start}|{end}|{datetime.utcnow().strftime('%Y-%m-%d')}"
+    return hashlib.md5(key.encode()).hexdigest()
+
+
+def _load_cache(key: str, ttl_hours: int) -> Optional[list[Bar]]:
+    path = CACHE_DIR / f"{key}.json"
+    if not path.exists():
+        return None
+    age_hours = (datetime.utcnow().timestamp() - path.stat().st_mtime) / 3600
+    if age_hours > ttl_hours:
+        path.unlink()
+        return None
+    with open(path) as f:
+        data = json.load(f)
+    return [
+        Bar(
+            timestamp=datetime.fromisoformat(b["t"]),
+            open=Decimal(b["o"]),
+            high=Decimal(b["h"]),
+            low=Decimal(b["l"]),
+            close=Decimal(b["c"]),
+            volume=b["v"],
+        )
+        for b in data
+    ]
+
+
+def _save_cache(key: str, bars: list[Bar]):
+    CACHE_DIR.mkdir(parents=True, exist_ok=True)
+    path = CACHE_DIR / f"{key}.json"
+    data = [
+        {"t": b.timestamp.isoformat(), "o": str(b.open), "h": str(b.high),
+         "l": str(b.low), "c": str(b.close), "v": b.volume}
+        for b in bars
+    ]
+    with open(path, "w") as f:
+        json.dump(data, f)
 
 
 def get_bars(
@@ -20,8 +67,10 @@ def get_bars(
     interval: str = "1d",
     start: Optional[str] = None,
     end: Optional[str] = None,
+    use_cache: bool = True,
+    cache_ttl_hours: int = 4,
 ) -> list[Bar]:
-    """Fetch OHLCV bars for a symbol.
+    """Fetch OHLCV bars for a symbol with file-based caching.
 
     Args:
         symbol: Ticker symbol (e.g., "AAPL", "BTC-USD", "SPY")
@@ -29,7 +78,16 @@ def get_bars(
         interval: Bar interval ("1m", "5m", "15m", "1h", "1d", "1wk")
         start: Start date string (overrides period if set)
         end: End date string
+        use_cache: Use file-based cache (default True)
+        cache_ttl_hours: Cache TTL in hours (default 4)
     """
+    # Check cache first
+    if use_cache:
+        key = _cache_key(symbol, period, interval, start, end)
+        cached = _load_cache(key, cache_ttl_hours)
+        if cached is not None:
+            return cached
+
     ticker = yf.Ticker(symbol)
     kwargs = {"interval": interval}
     if start:
@@ -45,14 +103,20 @@ def get_bars(
 
     bars = []
     for ts, row in df.iterrows():
-        bars.append(Bar(
-            timestamp=ts.to_pydatetime(),
-            open=Decimal(str(round(row["Open"], 4))),
-            high=Decimal(str(round(row["High"], 4))),
-            low=Decimal(str(round(row["Low"], 4))),
-            close=Decimal(str(round(row["Close"], 4))),
-            volume=int(row["Volume"]),
-        ))
+        if pd.notna(row["Close"]) and pd.notna(row["Volume"]):
+            bars.append(Bar(
+                timestamp=ts.to_pydatetime(),
+                open=Decimal(str(round(row["Open"], 4))),
+                high=Decimal(str(round(row["High"], 4))),
+                low=Decimal(str(round(row["Low"], 4))),
+                close=Decimal(str(round(row["Close"], 4))),
+                volume=int(row["Volume"]),
+            ))
+
+    # Save to cache
+    if use_cache and bars:
+        _save_cache(key, bars)
+
     return bars
 
 
@@ -94,7 +158,7 @@ def get_fundamentals(symbol: str) -> Optional[Fundamentals]:
 
     cal = ticker.calendar
     next_earnings = None
-    if isinstance(cal, pd.DataFrame) and "Earnings Date" in cal.columns:
+    if isinstance(cal, pd.DataFrame) and "Earnings Date" in cal.columns and len(cal) > 0:
         next_earnings = cal["Earnings Date"].iloc[0]
     elif isinstance(cal, dict) and "Earnings Date" in cal:
         dates = cal["Earnings Date"]

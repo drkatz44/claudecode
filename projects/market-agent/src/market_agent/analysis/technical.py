@@ -70,7 +70,7 @@ def rsi(bars: list[Bar], period: int = 14) -> pd.Series:
     loss = -delta.where(delta < 0, 0.0)
     avg_gain = gain.ewm(alpha=1 / period, min_periods=period).mean()
     avg_loss = loss.ewm(alpha=1 / period, min_periods=period).mean()
-    rs = avg_gain / avg_loss
+    rs = avg_gain / avg_loss.replace(0, 1e-10)
     return 100 - (100 / (1 + rs))
 
 
@@ -79,7 +79,8 @@ def stochastic(bars: list[Bar], k_period: int = 14, d_period: int = 3) -> pd.Dat
     df = bars_to_df(bars)
     low_min = df["low"].rolling(window=k_period).min()
     high_max = df["high"].rolling(window=k_period).max()
-    k = 100 * (df["close"] - low_min) / (high_max - low_min)
+    denom = (high_max - low_min).replace(0, 1e-10)
+    k = 100 * (df["close"] - low_min) / denom
     d = k.rolling(window=d_period).mean()
     return pd.DataFrame({"k": k, "d": d}, index=df.index)
 
@@ -102,8 +103,9 @@ def bollinger_bands(bars: list[Bar], period: int = 20, std_dev: float = 2.0) -> 
     std = df["close"].rolling(window=period).std()
     upper = middle + std_dev * std
     lower = middle - std_dev * std
-    bandwidth = (upper - lower) / middle
-    pct_b = (df["close"] - lower) / (upper - lower)
+    band_width_raw = upper - lower
+    bandwidth = band_width_raw / middle.replace(0, 1e-10)
+    pct_b = (df["close"] - lower) / band_width_raw.replace(0, 1e-10)
     return pd.DataFrame({
         "upper": upper,
         "middle": middle,
@@ -155,8 +157,87 @@ def obv(bars: list[Bar]) -> pd.Series:
 def volume_sma_ratio(bars: list[Bar], period: int = 20) -> pd.Series:
     """Current volume as ratio of SMA volume. >1 = above average."""
     df = bars_to_df(bars)
-    avg_vol = df["volume"].rolling(window=period).mean()
+    avg_vol = df["volume"].rolling(window=period).mean().replace(0, 1e-10)
     return df["volume"] / avg_vol
+
+
+# --- Trend Strength ---
+
+def adx(bars: list[Bar], period: int = 14) -> pd.DataFrame:
+    """Average Directional Index — measures trend strength (0-100).
+
+    ADX > 25 = trending market, < 20 = ranging/choppy.
+    +DI > -DI = bullish pressure, -DI > +DI = bearish pressure.
+
+    Returns DataFrame with columns: adx, plus_di, minus_di
+    """
+    df = bars_to_df(bars)
+    high = df["high"]
+    low = df["low"]
+    prev_close = df["close"].shift(1)
+
+    # True Range
+    tr = pd.concat([
+        high - low,
+        (high - prev_close).abs(),
+        (low - prev_close).abs(),
+    ], axis=1).max(axis=1)
+
+    # Directional Movement
+    up_move = high - high.shift(1)
+    down_move = low.shift(1) - low
+
+    plus_dm = up_move.where((up_move > down_move) & (up_move > 0), 0.0)
+    minus_dm = down_move.where((down_move > up_move) & (down_move > 0), 0.0)
+
+    # Wilder smoothing (same as ATR)
+    atr_smooth = tr.ewm(alpha=1 / period, min_periods=period).mean()
+    plus_di_smooth = plus_dm.ewm(alpha=1 / period, min_periods=period).mean()
+    minus_di_smooth = minus_dm.ewm(alpha=1 / period, min_periods=period).mean()
+
+    atr_safe = atr_smooth.replace(0, 1e-10)
+    plus_di = 100 * plus_di_smooth / atr_safe
+    minus_di = 100 * minus_di_smooth / atr_safe
+
+    # ADX = smoothed DX
+    di_sum = (plus_di + minus_di).replace(0, 1e-10)
+    dx = 100 * (plus_di - minus_di).abs() / di_sum
+    adx_line = dx.ewm(alpha=1 / period, min_periods=period).mean()
+
+    return pd.DataFrame({
+        "adx": adx_line,
+        "plus_di": plus_di,
+        "minus_di": minus_di,
+    }, index=df.index)
+
+
+def relative_strength(bars: list[Bar], benchmark_bars: list[Bar], period: int = 63) -> pd.Series:
+    """Relative strength vs a benchmark (e.g., SPY).
+
+    RS > 1.0 = outperforming benchmark over the period.
+    RS < 1.0 = underperforming benchmark.
+
+    Args:
+        bars: Symbol's OHLCV bars
+        benchmark_bars: Benchmark's OHLCV bars (e.g., SPY)
+        period: Lookback for rate-of-change comparison (63 ~= 3 months)
+    """
+    import numpy as np
+
+    sym_df = bars_to_df(bars)
+    bench_df = bars_to_df(benchmark_bars)
+
+    merged = pd.merge(
+        sym_df[["close"]].rename(columns={"close": "sym"}),
+        bench_df[["close"]].rename(columns={"close": "bench"}),
+        left_index=True, right_index=True, how="inner",
+    )
+
+    sym_roc = merged["sym"].pct_change(periods=period)
+    bench_roc = merged["bench"].pct_change(periods=period)
+
+    rs = (1 + sym_roc) / (1 + bench_roc).replace(0, 1e-10)
+    return rs.replace([np.inf, -np.inf], np.nan)
 
 
 # --- Support/Resistance ---

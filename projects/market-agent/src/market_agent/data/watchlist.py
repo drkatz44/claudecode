@@ -4,6 +4,7 @@ Watchlists are stored in ~/.market-agent/watchlists/ as YAML files.
 Each watchlist has a name, symbols, and optional metadata per symbol.
 """
 
+import re
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
@@ -87,8 +88,18 @@ class Watchlist:
         )
 
 
+def _safe_name(name: str) -> str:
+    """Sanitize watchlist name to prevent path traversal."""
+    return re.sub(r'[^\w\-]', '_', name)
+
+
 def _watchlist_path(name: str) -> Path:
-    return WATCHLIST_DIR / f"{name}.yaml"
+    safe = _safe_name(name)
+    path = WATCHLIST_DIR / f"{safe}.yaml"
+    # Verify resolved path stays within watchlist dir
+    if WATCHLIST_DIR.exists() and not path.resolve().is_relative_to(WATCHLIST_DIR.resolve()):
+        raise ValueError(f"Invalid watchlist name: {name}")
+    return path
 
 
 def save_watchlist(wl: Watchlist) -> Path:

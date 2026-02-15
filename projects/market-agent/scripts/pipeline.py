@@ -19,11 +19,13 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 
+from market_agent import validate_symbol
 from market_agent.analysis.screener import (
     CRYPTO_MAJORS,
     HIGH_IV_NAMES,
     SECTOR_ETFS,
     SP500_TOP,
+    filter_correlated,
     screen_mean_reversion,
     screen_momentum,
     screen_volatility,
@@ -100,6 +102,7 @@ def print_recommendations(title: str, recs: list[Recommendation]):
 def run_momentum_pipeline(symbols: list[str]) -> list[Recommendation]:
     """Scan → signal → recommend for momentum."""
     results = screen_momentum(symbols)
+    results = filter_correlated(results)
     recs = []
     for r in results[:8]:
         bars = get_bars(r.symbol, period="6mo")
@@ -113,6 +116,7 @@ def run_momentum_pipeline(symbols: list[str]) -> list[Recommendation]:
 def run_reversion_pipeline(symbols: list[str]) -> list[Recommendation]:
     """Scan → signal → recommend for mean reversion."""
     results = screen_mean_reversion(symbols, max_rsi=35)
+    results = filter_correlated(results)
     recs = []
     for r in results[:8]:
         bars = get_bars(r.symbol, period="6mo")
@@ -126,6 +130,7 @@ def run_reversion_pipeline(symbols: list[str]) -> list[Recommendation]:
 def run_volatility_pipeline(symbols: list[str]) -> list[Recommendation]:
     """Scan → signal → recommend for volatility/premium selling."""
     results = screen_volatility(symbols)
+    results = filter_correlated(results)
     recs = []
     for r in results[:8]:
         signal = signal_from_volatility(r)
@@ -238,7 +243,7 @@ def main():
     all_recs = []
 
     if mode == "symbol" and len(sys.argv) > 2:
-        deep_dive(sys.argv[2].upper())
+        deep_dive(validate_symbol(sys.argv[2]))
         return
 
     if mode == "watchlist" and len(sys.argv) > 2:

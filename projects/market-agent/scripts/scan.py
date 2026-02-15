@@ -10,6 +10,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 from rich.console import Console
 from rich.table import Table
 
+from market_agent import validate_symbol
 from market_agent.analysis.screener import (
     CRYPTO_MAJORS,
     HIGH_IV_NAMES,
@@ -86,7 +87,7 @@ def main():
         print_results("Sector Rotation", results)
 
     if scan_type == "symbol" and len(sys.argv) > 2:
-        sym = sys.argv[2].upper()
+        sym = validate_symbol(sys.argv[2])
         console.print(f"[bold]Technical summary for {sym}[/]")
         bars = get_bars(sym, period="6mo")
         if bars:

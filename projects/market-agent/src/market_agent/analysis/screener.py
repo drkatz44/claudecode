@@ -1,13 +1,14 @@
 """Market screener — find trading opportunities across asset classes."""
 
 from dataclasses import dataclass
+from datetime import datetime
 from decimal import Decimal
 from typing import Optional
 
 import pandas as pd
 
 from ..data.fetcher import get_bars, get_fundamentals, get_multiple_bars
-from .technical import atr, bars_to_df, bollinger_bands, rsi, sma, trend_summary, volume_sma_ratio
+from .technical import atr, bars_to_df, bollinger_bands, relative_strength, rsi, sma, trend_summary, volume_sma_ratio
 
 
 @dataclass
@@ -25,11 +26,66 @@ class ScreenResult:
     sma_50: float
     sector: Optional[str] = None
     market_cap: Optional[int] = None
+    rs_spy: Optional[float] = None  # relative strength vs SPY
     details: dict = None
 
     def __post_init__(self):
         if self.details is None:
             self.details = {}
+
+
+def _near_earnings(symbol: str, days_buffer: int = 7) -> bool:
+    """Return True if symbol has earnings within days_buffer days."""
+    try:
+        fund = get_fundamentals(symbol)
+        if not fund or not fund.next_earnings:
+            return False
+        days_until = (fund.next_earnings - datetime.now()).days
+        return -days_buffer <= days_until <= days_buffer
+    except Exception:
+        return False
+
+
+def filter_correlated(
+    results: list[ScreenResult],
+    threshold: float = 0.7,
+    lookback: str = "3mo",
+) -> list[ScreenResult]:
+    """Remove highly correlated symbols, keeping highest-scoring per cluster."""
+    if len(results) <= 1:
+        return results
+
+    symbols = [r.symbol for r in results]
+    all_bars = get_multiple_bars(symbols, period=lookback)
+
+    # Build returns matrix
+    returns_dict = {}
+    for sym, bars in all_bars.items():
+        if len(bars) < 20:
+            continue
+        df = bars_to_df(bars)
+        returns_dict[sym] = df["close"].pct_change().dropna()
+
+    if len(returns_dict) < 2:
+        return results
+
+    returns_df = pd.DataFrame(returns_dict)
+    corr_matrix = returns_df.corr()
+
+    # Greedy: keep top scorers, skip correlated
+    filtered = []
+    skip = set()
+
+    for r in results:
+        if r.symbol not in corr_matrix.index or r.symbol in skip:
+            continue
+        filtered.append(r)
+        for other in corr_matrix.index:
+            if other != r.symbol and other not in skip:
+                if corr_matrix.loc[r.symbol, other] > threshold:
+                    skip.add(other)
+
+    return filtered
 
 
 # --- Preset Watchlists ---
@@ -42,7 +98,7 @@ SP500_TOP = [
 
 CRYPTO_MAJORS = [
     "BTC-USD", "ETH-USD", "SOL-USD", "ADA-USD", "AVAX-USD",
-    "DOT-USD", "LINK-USD", "POL-USD", "XRP-USD", "ATOM-USD",
+    "DOT-USD", "LINK-USD", "DOGE-USD", "XRP-USD", "ATOM-USD",
 ]
 
 SECTOR_ETFS = [
@@ -61,13 +117,18 @@ def screen_momentum(
     max_rsi: float = 70,
     min_volume_ratio: float = 1.0,
     lookback: str = "6mo",
+    skip_earnings: bool = True,
+    min_rs: Optional[float] = None,
 ) -> list[ScreenResult]:
     """Screen for momentum: uptrend + rising volume + not overbought."""
     all_bars = get_multiple_bars(symbols, period=lookback)
+    spy_bars = get_bars("SPY", period=lookback) if min_rs is not None else None
     results = []
 
     for sym, bars in all_bars.items():
         if len(bars) < 50:
+            continue
+        if skip_earnings and _near_earnings(sym):
             continue
 
         summary = trend_summary(bars)
@@ -109,6 +170,14 @@ def screen_momentum(
         if vol_ratio < min_volume_ratio:
             continue
 
+        # Relative strength filter
+        rs_val = None
+        if spy_bars and min_rs is not None:
+            rs = relative_strength(bars, spy_bars, period=63)
+            rs_val = round(float(rs.iloc[-1]), 2) if not pd.isna(rs.iloc[-1]) else None
+            if rs_val is not None and rs_val < min_rs:
+                continue
+
         results.append(ScreenResult(
             symbol=sym,
             score=round(score, 1),
@@ -120,6 +189,7 @@ def screen_momentum(
             close=close,
             sma_20=float(summary["sma_20"]),
             sma_50=float(summary["sma_50"]),
+            rs_spy=rs_val,
             details=summary,
         ))
 
@@ -132,6 +202,7 @@ def screen_mean_reversion(
     max_rsi: float = 30,
     max_bb_pct_b: float = 0.1,
     lookback: str = "6mo",
+    skip_earnings: bool = True,
 ) -> list[ScreenResult]:
     """Screen for mean reversion: oversold + near lower Bollinger Band."""
     all_bars = get_multiple_bars(symbols, period=lookback)
@@ -139,6 +210,8 @@ def screen_mean_reversion(
 
     for sym, bars in all_bars.items():
         if len(bars) < 50:
+            continue
+        if skip_earnings and _near_earnings(sym):
             continue
 
         summary = trend_summary(bars)
@@ -198,6 +271,7 @@ def screen_volatility(
     symbols: list[str],
     min_atr_pct: float = 2.0,
     lookback: str = "6mo",
+    skip_earnings: bool = True,
 ) -> list[ScreenResult]:
     """Screen for high-volatility names good for options premium selling."""
     all_bars = get_multiple_bars(symbols, period=lookback)
@@ -205,6 +279,8 @@ def screen_volatility(
 
     for sym, bars in all_bars.items():
         if len(bars) < 50:
+            continue
+        if skip_earnings and _near_earnings(sym):
             continue
 
         summary = trend_summary(bars)
