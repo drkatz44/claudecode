@@ -71,6 +71,30 @@ class BacktestResult:
     benchmark_return_pct: Optional[float] = None
     alpha: Optional[float] = None
 
+    def to_dict(self) -> dict:
+        """Serialize result (excluding equity_curve for size)."""
+        d = {
+            "initial_capital": float(self.initial_capital),
+            "final_capital": float(self.final_capital),
+            "total_return_pct": round(self.total_return_pct, 2),
+            "win_rate": round(self.win_rate, 2),
+            "avg_win": round(self.avg_win, 2),
+            "avg_loss": round(self.avg_loss, 2),
+            "profit_factor": round(self.profit_factor, 2),
+            "max_drawdown_pct": round(self.max_drawdown_pct, 2),
+            "sharpe_ratio": round(self.sharpe_ratio, 2),
+            "sortino_ratio": round(self.sortino_ratio, 2),
+            "calmar_ratio": round(self.calmar_ratio, 2),
+            "total_trades": self.total_trades,
+            "avg_bars_held": round(self.avg_bars_held, 1),
+            "max_win_streak": self.max_win_streak,
+            "max_loss_streak": self.max_loss_streak,
+        }
+        if self.benchmark_return_pct is not None:
+            d["benchmark_return_pct"] = round(self.benchmark_return_pct, 2)
+            d["alpha"] = round(self.alpha, 2)
+        return d
+
     def summary(self) -> dict:
         d = {
             "total_return": f"{self.total_return_pct:.1f}%",

@@ -17,6 +17,7 @@ from rich.console import Console
 from rich.table import Table
 
 from market_agent import validate_symbol
+from market_agent.analysis.charts import chart_equity_curve
 from market_agent.backtest.engine import backtest, walk_forward
 from market_agent.backtest.strategies import breakout_volume, macd_momentum, mean_reversion_bb, momentum_crossover
 from market_agent.data.fetcher import get_bars
@@ -153,6 +154,14 @@ def main():
             result = run_backtest(symbol, name, func, benchmark_bars=spy_bars)
             if not result:
                 continue
+
+            # Generate equity curve chart
+            chart_path = chart_equity_curve(
+                result.equity_curve, symbol, strategy_name=name,
+                benchmark_return_pct=result.benchmark_return_pct,
+            )
+            if chart_path:
+                console.print(f"  [dim]Chart: {chart_path}[/]")
 
             s = result.summary()
             ret_style = "green" if result.total_return_pct > 0 else "red"

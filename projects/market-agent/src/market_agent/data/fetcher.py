@@ -14,7 +14,7 @@ from typing import Optional
 import pandas as pd
 import yfinance as yf
 
-from .models import Bar, Fundamentals, Quote
+from .models import Bar, Fundamentals, OptionQuote, Quote
 
 # --- File-based cache ---
 
@@ -229,3 +229,75 @@ def get_multiple_bars(
                     ))
 
     return result
+
+
+def get_expirations(symbol: str) -> list[str]:
+    """Return list of available option expiration dates for a symbol."""
+    try:
+        ticker = yf.Ticker(symbol)
+        return list(ticker.options)
+    except Exception:
+        return []
+
+
+def get_option_chain(
+    symbol: str,
+    expiry: Optional[str] = None,
+    use_cache: bool = True,
+    cache_ttl_hours: float = 0.25,  # 15 minutes
+) -> list[OptionQuote]:
+    """Fetch option chain for a symbol at a given expiration.
+
+    Args:
+        symbol: Ticker symbol
+        expiry: Expiration date string (YYYY-MM-DD). If None, uses nearest expiration.
+        use_cache: Use file-based cache (default True)
+        cache_ttl_hours: Cache TTL in hours (default 0.25 = 15 min)
+
+    Returns:
+        List of OptionQuote objects for both calls and puts.
+    """
+    try:
+        ticker = yf.Ticker(symbol)
+        expirations = ticker.options
+        if not expirations:
+            return []
+
+        target_expiry = expiry if expiry and expiry in expirations else expirations[0]
+        chain = ticker.option_chain(target_expiry)
+    except Exception:
+        return []
+
+    quotes = []
+    expiry_dt = datetime.strptime(target_expiry, "%Y-%m-%d")
+
+    for opt_type, df in [("call", chain.calls), ("put", chain.puts)]:
+        for _, row in df.iterrows():
+            strike = row.get("strike")
+            if strike is None or pd.isna(strike) or strike <= 0:
+                continue
+
+            bid = row.get("bid", 0)
+            ask = row.get("ask", 0)
+            last = row.get("lastPrice", 0)
+            iv = row.get("impliedVolatility")
+
+            # Skip zero-bid options (no market)
+            if pd.isna(bid) or bid <= 0:
+                continue
+
+            quotes.append(OptionQuote(
+                symbol=row.get("contractSymbol", ""),
+                underlying=symbol,
+                strike=Decimal(str(round(float(strike), 2))),
+                expiration=expiry_dt,
+                option_type=opt_type,
+                bid=Decimal(str(round(float(bid), 4))) if pd.notna(bid) else Decimal("0"),
+                ask=Decimal(str(round(float(ask), 4))) if pd.notna(ask) else Decimal("0"),
+                last=Decimal(str(round(float(last), 4))) if pd.notna(last) else Decimal("0"),
+                volume=int(row.get("volume", 0)) if pd.notna(row.get("volume")) else 0,
+                open_interest=int(row.get("openInterest", 0)) if pd.notna(row.get("openInterest")) else 0,
+                iv=Decimal(str(round(float(iv), 4))) if pd.notna(iv) and 0 < iv < 5.0 else None,
+            ))
+
+    return quotes

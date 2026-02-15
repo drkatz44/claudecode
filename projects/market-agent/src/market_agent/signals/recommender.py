@@ -22,6 +22,12 @@ class OptionsStrategy:
     delta_target: Optional[float] = None  # target delta for short strikes
     width: Optional[int] = None  # spread width in strikes (for verticals/condors)
     rationale: str = ""
+    # Resolved fields (populated by options.resolve_strategy)
+    expiration: Optional[str] = None
+    legs: Optional[list[dict]] = None
+    credit: Optional[Decimal] = None
+    max_loss: Optional[Decimal] = None
+    breakevens: Optional[list[Decimal]] = None
 
     def to_dict(self) -> dict:
         d = {
@@ -34,6 +40,16 @@ class OptionsStrategy:
             d["delta_target"] = self.delta_target
         if self.width is not None:
             d["spread_width"] = self.width
+        if self.expiration:
+            d["expiration"] = self.expiration
+        if self.legs:
+            d["legs"] = self.legs
+        if self.credit is not None:
+            d["credit"] = float(self.credit)
+        if self.max_loss is not None:
+            d["max_loss"] = float(self.max_loss)
+        if self.breakevens:
+            d["breakevens"] = [float(b) for b in self.breakevens]
         return d
 
 

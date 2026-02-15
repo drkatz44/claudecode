@@ -30,6 +30,7 @@ from market_agent.analysis.screener import (
     screen_momentum,
     screen_volatility,
 )
+from market_agent.analysis.charts import chart_technical
 from market_agent.analysis.technical import trend_summary
 from market_agent.data.fetcher import get_bars
 from market_agent.data.watchlist import get_or_create, list_watchlists, load_watchlist, save_watchlist
@@ -224,6 +225,11 @@ def deep_dive(symbol: str):
         print_recommendations(f"Recommendations for {symbol}", recs)
     else:
         console.print(f"  [dim]No actionable signals for {symbol} right now[/]")
+
+    # Generate technical chart
+    chart_path = chart_technical(bars, symbol)
+    if chart_path:
+        console.print(f"  [dim]Chart saved: {chart_path}[/]")
 
     # Add to watchlist
     wl = get_or_create("recent_scans", "Symbols recently analyzed")
