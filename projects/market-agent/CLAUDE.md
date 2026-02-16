@@ -2,8 +2,7 @@
 
 ## Purpose
 Financial markets analysis and trading signal generation. Broker-agnostic research
-and analysis layer that feeds execution engines (tastytrade for options, Alpaca for
-equities/crypto).
+and analysis layer that feeds tastytrade for execution (equities, options, crypto).
 
 ## Status
 active
@@ -15,9 +14,7 @@ Python (uv, pandas, numpy, pydantic, rich, yfinance, matplotlib, pytest, ruff)
 ```
 MCP Integrations (data + execution)
   ├── polygon-io    — market data, news, fundamentals
-  ├── alpha-vantage — technical indicators, options data
-  ├── alpaca        — equities/crypto broker + paper trading
-  └── tasty-agent   — options execution (existing)
+  └── tasty-agent   — broker for equities, options, crypto + greeks/IV
 
 market-agent (this project)
   ├── data/         — fetcher (yfinance+options), models, watchlists, config
@@ -106,11 +103,9 @@ tastytrade-compatible options strategy suggestions:
 Each OptionsStrategy includes: strategy_type, DTE range, delta target, spread width.
 Claude can pass these directly to the tastytrade project's strategy constructors.
 
-## MCP Servers (pending API keys)
-- **polygon-io**: Market data — `uvx mcp_polygon`
-- **alpha-vantage**: Technical indicators — remote SSE server
-- **alpaca**: Broker — `uvx alpaca-mcp-server`
-- **tasty-agent**: Options broker — `uvx tasty-agent` (configured in workspace root)
+## MCP Servers
+- **polygon-io**: Market data, news, fundamentals — `uvx mcp_polygon` (configured)
+- **tasty-agent**: Broker (equities, options, crypto) + greeks/IV — `uvx tasty-agent` (configured)
 
 ## Options Analysis
 - IV rank/percentile using HV as proxy (yfinance has no Greeks)

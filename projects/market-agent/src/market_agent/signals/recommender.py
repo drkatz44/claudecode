@@ -1,8 +1,8 @@
 """Recommender — converts signals into actionable trade recommendations.
 
-Bridges market-agent signals to execution-ready output. For options plays,
-produces tastytrade-compatible strategy suggestions that Claude can pass
-directly to the tastytrade project's strategy constructors.
+Bridges market-agent signals to tastytrade execution. Produces order leg dicts
+compatible with tasty-agent MCP's place_order(legs=[...]) for equities, options,
+and crypto. Claude passes these directly to the MCP server.
 """
 
 from dataclasses import dataclass, field
@@ -77,6 +77,46 @@ class Recommendation:
             return abs(self.entry_price - self.stop_loss)
         return None
 
+    def to_order_legs(self, quantity: int = 100) -> list[dict]:
+        """Convert recommendation to tastytrade-compatible order legs.
+
+        Produces dicts matching tasty-agent MCP OrderLeg schema:
+            - symbol, action, quantity
+            - option_type, strike_price, expiration_date (for options)
+
+        Args:
+            quantity: Number of shares (equities) or contracts (options).
+                      Default 100 shares for equities.
+
+        Returns:
+            List of order leg dicts ready for place_order(legs=[...]).
+        """
+        if self.action == "sell_premium" and self.options_strategy and self.options_strategy.legs:
+            # Options: use resolved strategy legs
+            legs = []
+            for leg in self.options_strategy.legs:
+                order_leg = {
+                    "symbol": self.symbol,
+                    "quantity": quantity,
+                    "option_type": "P" if leg["type"] == "put" else "C",
+                    "strike_price": leg["strike"],
+                    "expiration_date": self.options_strategy.expiration,
+                }
+                if leg["side"] == "sell":
+                    order_leg["action"] = "Sell to Open"
+                else:
+                    order_leg["action"] = "Buy to Open"
+                legs.append(order_leg)
+            return legs
+
+        elif self.action == "buy_equity":
+            return [{"symbol": self.symbol, "action": "Buy", "quantity": quantity}]
+
+        elif self.action == "sell_equity":
+            return [{"symbol": self.symbol, "action": "Sell", "quantity": quantity}]
+
+        return []
+
     def to_dict(self) -> dict:
         d = {
             "symbol": self.symbol,
@@ -96,6 +136,9 @@ class Recommendation:
             d["risk_reward"] = round(self.risk_reward, 2)
         if self.options_strategy:
             d["options_strategy"] = self.options_strategy.to_dict()
+        order_legs = self.to_order_legs()
+        if order_legs:
+            d["order_legs"] = order_legs
         return d
 
 
