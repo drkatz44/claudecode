@@ -44,6 +44,10 @@ cd projects/youtube-notes && uv run youtube-notes summarize VIDEO_ID
 # Security scan
 cc --security              # All projects
 cc --security youtube-notes # Specific project
+
+# Performance analysis (custom slash command)
+/performance-optimization           # Analyze current project
+/performance-optimization src/      # Analyze specific path
 ```
 
 ### MCP Servers Available
