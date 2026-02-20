@@ -40,6 +40,10 @@ cd projects/market-agent && uv run python scripts/pipeline.py
 
 # YouTube notes
 cd projects/youtube-notes && uv run youtube-notes summarize VIDEO_ID
+
+# Security scan
+cc --security              # All projects
+cc --security youtube-notes # Specific project
 ```
 
 ### MCP Servers Available
