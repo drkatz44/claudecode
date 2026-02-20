@@ -10,7 +10,7 @@ from rich.panel import Panel
 
 from .models import MeetingNotes, Transcript
 from .summarize import summarize_transcript
-from .transcript import fetch_transcript, list_available_transcripts
+from .transcript import clear_cache, fetch_transcript, list_available_transcripts
 
 app = typer.Typer(
     name="youtube-notes",
@@ -42,6 +42,7 @@ def transcribe(
     language: str = typer.Option("en", "--language", "-l", help="Transcript language code"),
     start: str | None = typer.Option(None, "--start", "-s", help="Start time (minutes or mm:ss)"),
     end: str | None = typer.Option(None, "--end", "-e", help="End time (minutes or mm:ss)"),
+    no_cache: bool = typer.Option(False, "--no-cache", help="Bypass cache and fetch fresh"),
 ):
     """Fetch and display the transcript of a YouTube video."""
     try:
@@ -49,7 +50,7 @@ def transcribe(
         end_time = parse_time(end)
 
         with console.status("Fetching transcript..."):
-            transcript = fetch_transcript(url, languages=[language], start_time=start_time, end_time=end_time)
+            transcript = fetch_transcript(url, languages=[language], start_time=start_time, end_time=end_time, use_cache=not no_cache)
 
         text = transcript.timestamped_text if timestamps else transcript.full_text
 
@@ -74,6 +75,7 @@ def summarize(
     ),
     start: str | None = typer.Option(None, "--start", "-s", help="Start time (minutes or mm:ss)"),
     end: str | None = typer.Option(None, "--end", "-e", help="End time (minutes or mm:ss)"),
+    no_cache: bool = typer.Option(False, "--no-cache", help="Bypass cache and fetch fresh"),
 ):
     """Generate meeting notes summary from a YouTube video."""
     try:
@@ -81,7 +83,7 @@ def summarize(
         end_time = parse_time(end)
 
         with console.status("Fetching transcript..."):
-            transcript = fetch_transcript(url, languages=[language], start_time=start_time, end_time=end_time)
+            transcript = fetch_transcript(url, languages=[language], start_time=start_time, end_time=end_time, use_cache=not no_cache)
 
         console.print(f"[dim]Video: {transcript.title}[/dim]")
         console.print(f"[dim]Transcript length: {len(transcript.full_text)} characters[/dim]")
@@ -123,6 +125,32 @@ def languages(
     except Exception as e:
         console.print(f"[red]Error: {e}[/red]")
         raise typer.Exit(1)
+
+
+@app.command()
+def cache(
+    clear_all: bool = typer.Option(False, "--clear", "-c", help="Clear all cached transcripts"),
+    video: str | None = typer.Option(None, "--video", "-v", help="Clear cache for specific video ID"),
+):
+    """Manage transcript cache."""
+    if clear_all:
+        clear_cache()
+        console.print("[green]Cache cleared.[/green]")
+    elif video:
+        clear_cache(video)
+        console.print(f"[green]Cache cleared for {video}.[/green]")
+    else:
+        from .transcript import CACHE_DIR
+        if CACHE_DIR.exists():
+            files = list(CACHE_DIR.glob("*.json"))
+            console.print(f"[bold]Cache location:[/bold] {CACHE_DIR}")
+            console.print(f"[bold]Cached transcripts:[/bold] {len(files)}")
+            for f in files[:10]:
+                console.print(f"  - {f.stem}")
+            if len(files) > 10:
+                console.print(f"  ... and {len(files) - 10} more")
+        else:
+            console.print("[dim]No cache directory yet.[/dim]")
 
 
 def format_notes_as_markdown(notes: MeetingNotes) -> str:

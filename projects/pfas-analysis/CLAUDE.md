@@ -30,9 +30,24 @@ Shimadzu Nexera X2 / LCMS-8060 system:
 - `data/raw/` - raw instrument data
 - `data/processed/` - processed results
 
-## Current Focus
-1. Define compound database with MRM transitions from Waters method
-2. Translate method parameters to Shimadzu 8060 format
+## Current State (2026-02)
+
+### Standards
+- **Native**: Wellington PFAC-24PAR (24 PFAS compounds)
+- **Internal**: MPFAC-24ES (isotope-labeled)
+
+### Key Insight
+Shimadzu 8060 MRM optimization via **sequential injection**, not direct infusion.
+
+### Current Focus
+- Dwell time optimization (currently 20ms)
+- RT window tightening for more data points per peak
+- Delay column not yet installed
+- No system contamination observed yet
+
+### Next Steps
+1. Complete MRM optimization for all 24 compounds
+2. Validate with calibration curve
 3. Build data processing pipeline
 
 ## Notes

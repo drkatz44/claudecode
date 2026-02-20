@@ -41,8 +41,26 @@ uv run youtube-notes languages VIDEO_ID
 ## Environment
 - `ANTHROPIC_API_KEY` - Required for summarization
 
-## Current Focus
-Initial implementation complete - ready for testing
+## Current State (2026-02)
+
+### Working
+- CLI: `transcribe`, `summarize`, `languages`, `cache` commands
+- Transcript caching (7-day TTL, `~/.cache/youtube-notes/`)
+- Transcript fetching with time range filtering (`--start`, `--end`)
+- Claude summarization → meeting notes (good quality output)
+- Multi-language support
+- Basic speaker detection (`>>` markers from auto-captions)
+- Colab notebook for GPU-based speaker diarization (pyannote.audio)
+
+### Needs Improvement
+- **Speaker diarization not integrated** - Colab notebook exists but separate from CLI
+- **No `--speakers` flag** - `parse_speakers()` exists but not exposed
+- **Long video chunking** - No handling for Claude context limits
+- **Output formats** - Only markdown (could add JSON, SRT)
+
+### Key Files
+- `src/youtube_notes/transcript.py:83` - `parse_speakers()` (unused in CLI)
+- `colab_diarization.ipynb` - GPU speaker diarization with pyannote
 
 ## Notes
 - Uses YouTube's built-in transcripts (auto-generated or manual captions)
