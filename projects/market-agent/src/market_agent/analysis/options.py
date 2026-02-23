@@ -253,16 +253,22 @@ def resolve_strategy(
     exp_date = datetime.strptime(expiry, "%Y-%m-%d").date()
     dte = (exp_date - datetime.now().date()).days
 
-    if strategy_type == "short_put":
-        return _resolve_short_put(chain, underlying_price, delta_target, expiry, dte)
-    elif strategy_type == "iron_condor":
-        return _resolve_iron_condor(chain, underlying_price, delta_target, expiry, dte, width or 5)
-    elif strategy_type == "strangle":
-        return _resolve_strangle(chain, underlying_price, delta_target, expiry, dte)
-    elif strategy_type == "vertical_spread":
-        return _resolve_vertical_spread(chain, underlying_price, delta_target, expiry, dte, width or 5)
-    else:
+    resolvers = {
+        "short_put": lambda: _resolve_short_put(chain, underlying_price, delta_target, expiry, dte),
+        "iron_condor": lambda: _resolve_iron_condor(chain, underlying_price, delta_target, expiry, dte, width or 5),
+        "strangle": lambda: _resolve_strangle(chain, underlying_price, delta_target, expiry, dte),
+        "vertical_spread": lambda: _resolve_vertical_spread(chain, underlying_price, delta_target, expiry, dte, width or 5),
+        "calendar": lambda: _resolve_calendar(symbol, chain, underlying_price, delta_target, expiry, dte),
+        "diagonal": lambda: _resolve_diagonal(symbol, chain, underlying_price, delta_target, expiry, dte),
+        "jade_lizard": lambda: _resolve_jade_lizard(chain, underlying_price, delta_target, expiry, dte),
+        "back_ratio": lambda: _resolve_back_ratio(chain, underlying_price, delta_target, expiry, dte),
+        "bwb": lambda: _resolve_bwb(chain, underlying_price, delta_target, expiry, dte),
+    }
+
+    resolver = resolvers.get(strategy_type)
+    if resolver is None:
         return None
+    return resolver()
 
 
 def _resolve_short_put(chain, underlying_price, delta, expiry, dte):
@@ -418,6 +424,259 @@ def _find_wing(sorted_options: list[OptionQuote], anchor_strike: Decimal, offset
         return None
 
     return sorted_options[target_idx]
+
+
+def _resolve_calendar(symbol, chain, underlying_price, delta, front_expiry, front_dte):
+    """Calendar spread: sell front-month ATM, buy back-month ATM same strike.
+
+    Profits from time decay differential and vol expansion in back month.
+    """
+    # Find ATM put for front month
+    front_strike = find_strike_by_delta(chain, 0.50, "put", underlying_price)
+    if not front_strike:
+        return None
+
+    # Find a back-month expiry ~30 days further out
+    expirations = get_expirations(symbol)
+    back_expiry = find_optimal_expiry(expirations, front_dte + 25, front_dte + 60)
+    if not back_expiry:
+        return None
+
+    back_chain = get_option_chain(symbol, back_expiry)
+    if not back_chain:
+        return None
+
+    # Find same strike in back month
+    back_options = [q for q in back_chain
+                    if q.option_type == "put" and q.strike == front_strike.strike and float(q.ask) > 0]
+    if not back_options:
+        return None
+    back_strike = back_options[0]
+
+    # Debit = back premium - front premium (buy back, sell front)
+    debit = float(back_strike.ask - front_strike.bid)
+    if debit <= 0:
+        debit = float((back_strike.ask + back_strike.bid) / 2 - (front_strike.bid + front_strike.ask) / 2)
+
+    back_exp_date = datetime.strptime(back_expiry, "%Y-%m-%d").date()
+    back_dte = (back_exp_date - datetime.now().date()).days
+
+    return {
+        "expiration": front_expiry,
+        "back_expiration": back_expiry,
+        "dte": front_dte,
+        "back_dte": back_dte,
+        "legs": [
+            {"strike": float(front_strike.strike), "type": "put", "side": "sell",
+             "expiration": front_expiry,
+             "bid": float(front_strike.bid), "ask": float(front_strike.ask)},
+            {"strike": float(back_strike.strike), "type": "put", "side": "buy",
+             "expiration": back_expiry,
+             "bid": float(back_strike.bid), "ask": float(back_strike.ask)},
+        ],
+        "debit": round(abs(debit), 2),
+        "credit": None,
+        "max_loss": round(abs(debit), 2),  # Max loss = debit paid
+        "breakevens": [],  # Complex, depends on IV
+    }
+
+
+def _resolve_diagonal(symbol, chain, underlying_price, delta, front_expiry, front_dte):
+    """Diagonal spread: sell front-month OTM, buy back-month further OTM same type.
+
+    Like a calendar but with different strikes — combines directional + time decay.
+    """
+    # Sell front-month OTM put
+    front_strike = find_strike_by_delta(chain, delta, "put", underlying_price)
+    if not front_strike:
+        return None
+
+    # Buy back-month slightly less OTM put (higher strike for puts)
+    expirations = get_expirations(symbol)
+    back_expiry = find_optimal_expiry(expirations, front_dte + 25, front_dte + 60)
+    if not back_expiry:
+        return None
+
+    back_chain = get_option_chain(symbol, back_expiry)
+    if not back_chain:
+        return None
+
+    # Back month: slightly higher delta (closer to ATM) for protection
+    back_strike = find_strike_by_delta(back_chain, min(delta + 0.10, 0.40), "put", underlying_price)
+    if not back_strike:
+        return None
+
+    debit = float(back_strike.ask - front_strike.bid)
+    if debit <= 0:
+        debit = float((back_strike.ask + back_strike.bid) / 2 - (front_strike.bid + front_strike.ask) / 2)
+
+    back_exp_date = datetime.strptime(back_expiry, "%Y-%m-%d").date()
+    back_dte = (back_exp_date - datetime.now().date()).days
+
+    return {
+        "expiration": front_expiry,
+        "back_expiration": back_expiry,
+        "dte": front_dte,
+        "back_dte": back_dte,
+        "legs": [
+            {"strike": float(front_strike.strike), "type": "put", "side": "sell",
+             "expiration": front_expiry,
+             "bid": float(front_strike.bid), "ask": float(front_strike.ask)},
+            {"strike": float(back_strike.strike), "type": "put", "side": "buy",
+             "expiration": back_expiry,
+             "bid": float(back_strike.bid), "ask": float(back_strike.ask)},
+        ],
+        "debit": round(abs(debit), 2),
+        "credit": None,
+        "max_loss": round(abs(debit), 2),
+        "breakevens": [],
+    }
+
+
+def _resolve_jade_lizard(chain, underlying_price, delta, expiry, dte):
+    """Jade lizard: short put + short call spread (no upside risk).
+
+    Sell OTM put + sell OTM call spread where call spread credit > put strike width.
+    The combined credit eliminates upside risk.
+    """
+    short_put = find_strike_by_delta(chain, delta, "put", underlying_price)
+    short_call = find_strike_by_delta(chain, 0.30, "call", underlying_price)
+    if not short_put or not short_call:
+        return None
+
+    calls = sorted([q for q in chain if q.option_type == "call"], key=lambda q: q.strike)
+    long_call = _find_wing(calls, short_call.strike, 3)  # 3 strikes wide
+    if not long_call:
+        return None
+
+    put_credit = float((short_put.bid + short_put.ask) / 2)
+    call_spread_credit = float((short_call.bid - long_call.ask + short_call.ask - long_call.bid) / 2)
+    total_credit = put_credit + call_spread_credit
+
+    call_width = float(long_call.strike - short_call.strike)
+    # Max loss on call side = call width - total credit
+    # Max loss on put side = short put strike - total credit
+    max_loss_upside = call_width - total_credit
+    max_loss_downside = float(short_put.strike) - total_credit
+
+    return {
+        "expiration": expiry,
+        "dte": dte,
+        "legs": [
+            {"strike": float(short_put.strike), "type": "put", "side": "sell",
+             "bid": float(short_put.bid), "ask": float(short_put.ask)},
+            {"strike": float(short_call.strike), "type": "call", "side": "sell",
+             "bid": float(short_call.bid), "ask": float(short_call.ask)},
+            {"strike": float(long_call.strike), "type": "call", "side": "buy",
+             "bid": float(long_call.bid), "ask": float(long_call.ask)},
+        ],
+        "credit": round(total_credit, 2),
+        "max_loss": round(max(max_loss_upside, 0), 2),  # No upside risk if credit > call width
+        "max_loss_downside": round(max(max_loss_downside, 0), 2),
+        "breakevens": [round(float(short_put.strike) - total_credit, 2)],
+    }
+
+
+def _resolve_back_ratio(chain, underlying_price, delta, expiry, dte):
+    """Put back ratio: sell 1 ATM put, buy 2 OTM puts.
+
+    Net credit or small debit. Profits from large down move.
+    """
+    # Sell 1 higher-strike put (closer to ATM)
+    short_put = find_strike_by_delta(chain, 0.40, "put", underlying_price)
+    if not short_put:
+        return None
+
+    # Buy 2 lower-strike puts (more OTM)
+    long_put = find_strike_by_delta(chain, delta, "put", underlying_price)
+    if not long_put:
+        return None
+
+    if long_put.strike >= short_put.strike:
+        return None
+
+    # Credit from selling 1 higher put, debit from buying 2 lower puts
+    short_mid = float((short_put.bid + short_put.ask) / 2)
+    long_mid = float((long_put.bid + long_put.ask) / 2)
+    net = short_mid - 2 * long_mid  # Positive = net credit
+
+    spread_width = float(short_put.strike - long_put.strike)
+    # Max loss occurs at long put strike: spread_width - net credit (if net credit)
+    max_loss = spread_width - net if net > 0 else spread_width + abs(net)
+
+    return {
+        "expiration": expiry,
+        "dte": dte,
+        "legs": [
+            {"strike": float(short_put.strike), "type": "put", "side": "sell", "quantity": 1,
+             "bid": float(short_put.bid), "ask": float(short_put.ask)},
+            {"strike": float(long_put.strike), "type": "put", "side": "buy", "quantity": 2,
+             "bid": float(long_put.bid), "ask": float(long_put.ask)},
+        ],
+        "credit": round(net, 2) if net > 0 else None,
+        "debit": round(abs(net), 2) if net <= 0 else None,
+        "max_loss": round(max_loss, 2),
+        "breakevens": [
+            round(float(long_put.strike) - abs(net), 2),  # Lower breakeven
+            round(float(short_put.strike) - abs(net), 2) if net > 0 else float(short_put.strike),  # Upper
+        ],
+    }
+
+
+def _resolve_bwb(chain, underlying_price, delta, expiry, dte):
+    """Broken wing butterfly (put BWB): buy 1 ITM put, sell 2 ATM puts, buy 1 OTM put (skip a strike).
+
+    Skipping a strike on the downside creates a credit or even entry.
+    Profits if underlying stays near short strikes.
+    """
+    # Short 2x ATM-ish puts
+    short_put = find_strike_by_delta(chain, 0.40, "put", underlying_price)
+    if not short_put:
+        return None
+
+    puts = sorted([q for q in chain if q.option_type == "put"], key=lambda q: q.strike)
+
+    # Upper long: 3 strikes above short
+    upper_long = _find_wing(puts, short_put.strike, 3)
+    # Lower long: 4-5 strikes below short (broken wing — wider on downside)
+    lower_long = _find_wing(puts, short_put.strike, -5)
+
+    if not upper_long or not lower_long:
+        return None
+
+    # Ensure proper ordering
+    if not (lower_long.strike < short_put.strike < upper_long.strike):
+        return None
+
+    upper_mid = float((upper_long.bid + upper_long.ask) / 2)
+    short_mid = float((short_put.bid + short_put.ask) / 2)
+    lower_mid = float((lower_long.bid + lower_long.ask) / 2)
+
+    # Net: buy 1 upper + buy 1 lower - sell 2 short
+    net = upper_mid + lower_mid - 2 * short_mid  # Negative = net credit
+
+    upper_width = float(upper_long.strike - short_put.strike)
+    lower_width = float(short_put.strike - lower_long.strike)
+
+    # Max loss on downside = lower_width - upper_width + net debit (or - net credit)
+    max_loss = lower_width - upper_width + net if net > 0 else max(lower_width - upper_width + net, 0)
+
+    return {
+        "expiration": expiry,
+        "dte": dte,
+        "legs": [
+            {"strike": float(upper_long.strike), "type": "put", "side": "buy", "quantity": 1,
+             "bid": float(upper_long.bid), "ask": float(upper_long.ask)},
+            {"strike": float(short_put.strike), "type": "put", "side": "sell", "quantity": 2,
+             "bid": float(short_put.bid), "ask": float(short_put.ask)},
+            {"strike": float(lower_long.strike), "type": "put", "side": "buy", "quantity": 1,
+             "bid": float(lower_long.bid), "ask": float(lower_long.ask)},
+        ],
+        "credit": round(abs(net), 2) if net < 0 else None,
+        "debit": round(net, 2) if net > 0 else None,
+        "max_loss": round(abs(max_loss), 2),
+        "breakevens": [round(float(short_put.strike) - upper_width, 2)],
+    }
 
 
 def options_summary(symbol: str) -> Optional[dict]:
