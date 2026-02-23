@@ -78,19 +78,20 @@ class Orchestrator:
             state.proposals = []
             return state
 
-        # Check BP headroom
-        bp_available = float(state.buying_power)
-        net_liq = float(state.net_liq)
+        # Check BP headroom — use Decimal throughout for financial precision
+        bp_available = state.buying_power
+        net_liq = state.net_liq
         if net_liq <= 0:
             state.proposals = []
             return state
 
-        current_bp_usage = state.bp_usage_pct
-        bp_headroom = self.max_bp_pct - current_bp_usage
+        current_bp_usage = Decimal(str(state.bp_usage_pct))
+        max_bp = Decimal(str(self.max_bp_pct))
+        bp_headroom = max_bp - current_bp_usage
 
         if bp_headroom <= 0:
             state.alerts.append(
-                f"WARN: BP usage at {current_bp_usage:.1f}% — max {self.max_bp_pct}%"
+                f"WARN: BP usage at {state.bp_usage_pct:.1f}% — max {self.max_bp_pct}%"
             )
             state.proposals = []
             return state
@@ -98,6 +99,7 @@ class Orchestrator:
         # Filter: no single position > MAX_SINGLE_POSITION_PCT
         filtered: list[TradeProposal] = []
         symbol_count: dict[str, int] = {}
+        cumulative_bp_pct = current_bp_usage
 
         for proposal in state.proposals:
             # Position size check
@@ -111,12 +113,14 @@ class Orchestrator:
             symbol_count[sym] = symbol_count.get(sym, 0) + 1
 
             # Check if adding this would exceed BP limit
-            position_bp = net_liq * proposal.position_size_pct / 100
-            if current_bp_usage + (position_bp / bp_available * 100 if bp_available > 0 else 100) > self.max_bp_pct:
+            position_bp = net_liq * Decimal(str(proposal.position_size_pct)) / Decimal("100")
+            position_bp_pct = (position_bp / bp_available * Decimal("100")) if bp_available > 0 else Decimal("100")
+            if cumulative_bp_pct + position_bp_pct > max_bp:
                 state.alerts.append(
                     f"INFO: Skipping {sym} {proposal.strategy_type} — would exceed BP limit"
                 )
                 continue
+            cumulative_bp_pct += position_bp_pct
 
             filtered.append(proposal)
 

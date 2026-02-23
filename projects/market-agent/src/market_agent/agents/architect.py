@@ -7,6 +7,7 @@ scanning the futures + ETF universe for opportunities.
 import logging
 from decimal import Decimal
 
+from .. import validate_symbol
 from ..analysis.options import iv_rank, options_summary, resolve_strategy
 from ..analysis.vol_regime import compute_ivx
 from ..data.fetcher import get_bars
@@ -74,10 +75,16 @@ class TradeArchitect:
 
         for symbol in symbols:
             try:
+                symbol = validate_symbol(symbol)
+            except ValueError:
+                logger.warning("Invalid symbol skipped: %s", symbol)
+                continue
+
+            try:
                 proposal = self._evaluate_symbol(symbol, regime, playbook)
                 if proposal:
                     proposals.append(proposal)
-            except Exception:
+            except (ValueError, KeyError, TypeError):
                 logger.exception("Error evaluating %s", symbol)
 
         # Sort by IVR (highest first) and cap

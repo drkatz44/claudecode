@@ -268,7 +268,19 @@ def resolve_strategy(
     resolver = resolvers.get(strategy_type)
     if resolver is None:
         return None
-    return resolver()
+    result = resolver()
+    if result is None:
+        return None
+
+    # Validate resolver output: credit/max_loss must be non-negative when present
+    credit = result.get("credit")
+    if credit is not None and credit < 0:
+        return None
+    max_loss = result.get("max_loss")
+    if max_loss is not None and max_loss < 0:
+        return None
+
+    return result
 
 
 def _resolve_short_put(chain, underlying_price, delta, expiry, dte):

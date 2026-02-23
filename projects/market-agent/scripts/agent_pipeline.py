@@ -19,6 +19,7 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 
+from market_agent import validate_symbol
 from market_agent.agents.orchestrator import Orchestrator
 from market_agent.agents.state import PortfolioState
 
@@ -33,9 +34,9 @@ def build_state(args: argparse.Namespace) -> PortfolioState:
     )
 
     if args.symbol:
-        state.scan_symbols = [args.symbol.upper()]
+        state.scan_symbols = [validate_symbol(args.symbol)]
     elif args.symbols:
-        state.scan_symbols = [s.strip().upper() for s in args.symbols.split(",")]
+        state.scan_symbols = [validate_symbol(s.strip()) for s in args.symbols.split(",")]
 
     return state
 
