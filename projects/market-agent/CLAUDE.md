@@ -120,6 +120,55 @@ Claude can pass these directly to the tastytrade project's strategy constructors
 - `~/.market-agent/config.yaml` — Scan configuration
 - `~/.market-agent/last_scan.json` — Previous scan for change detection
 
+## Tastytrade API Integrations — Future Data Sources (investigated 2026-02-25)
+
+### DXLink Streaming Market Data
+WebSocket feed for real-time Greeks and quotes.
+
+**What it provides:**
+- `Quote` — real-time bid/ask
+- `Greeks` — live delta/gamma/theta/vega/rho + IV per contract
+- `Candle` — OHLC with historical backfill via `fromTime`
+- Auth: `GET /api-quote-tokens` → 24-hour token → WebSocket AUTH message
+
+**Current state of tastytrade sibling project:**
+- No DXLink/WebSocket client implemented (all data via tasty-agent MCP on-demand)
+- `OptionGreeks` model exists with all fields; auth fully delegated to tasty-agent MCP
+
+**Integration path for market-agent:** tasty-agent MCP `get_greeks()` → populate
+`OptionQuote.delta/gamma/theta/vega/iv` (fields already exist in `data/models.py`).
+Currently those fields are filled by `enrich_option_quote_greeks()` (black_scholes.py).
+Live Greeks would matter most for `RiskMonitor` delta breach alerts on open positions.
+
+### Tastytrade Backtesting API
+REST API at `https://backtester.vast.tastyworks.com`.
+
+**Endpoints:**
+- `POST /backtests` — create backtest, returns 200 (ready) or 201 (pending)
+- `GET /backtests/{id}` — poll for results
+- `GET /available-dates` — symbols with supported historical date ranges
+- `POST /simulate-trade` — P&L snapshots for a single trade config
+
+**What you can specify per leg:**
+- `type`: equity | equity-option; `direction`: long | short
+- `strikeSelection`: delta, percentageOTM, premium, currentPriceOffset (7 methods)
+- `delta`: 1-100, `daysUntilExpiration`, `side`: call | put
+
+**Entry conditions:** frequency, VIX min/max, max concurrent positions
+**Exit conditions:** profit target %, stop loss %, DTE exit, days-in-trade, VIX exit
+
+**Results:** per-trial openDateTime/closeDateTime/profitLoss, daily snapshots with
+underlyingPrice, aggregated statistics. Simulate-trade response includes delta per date.
+
+**Relevance to market-agent:**
+- Direct replacement for `backtest/options_engine.py` yfinance proxy approach
+- Tastytrade has actual historical fills + IV; our engine estimates from price moves
+- Could wire as a third `OptionsDataProvider` in `data/theta.py` alongside YFinance/Theta
+- Auth likely uses same OAuth bearer token as main API (unconfirmed)
+
+**Not implementing now** — options_engine.py proxy is sufficient for regime-aware
+proposal generation. Priority if accurate historical win rates become important.
+
 ## Conventions
 - All prices as Decimal for precision
 - UTC timestamps everywhere

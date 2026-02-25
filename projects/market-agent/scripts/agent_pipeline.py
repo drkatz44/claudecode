@@ -55,6 +55,12 @@ def print_org_chart() -> None:
     analysis.add("technical.py       15 indicators (SMA, RSI, MACD, BB, ATR…)")
     analysis.add("screener.py        Momentum, reversion, volatility screens")
 
+    # Backtest data sources
+    bt_data = root.add("[bold cyan]Backtest Data Sources[/bold cyan]  (priority order)")
+    bt_data.add("[bold]1.[/bold] tastytrade API  [dim]data/tasty_backtest.py[/dim]  real fills — needs tastytrade_token in config")
+    bt_data.add("[bold]2.[/bold] Theta Data      [dim]data/theta.py[/dim]           historical chains — needs theta_data_key in config")
+    bt_data.add("[bold]3.[/bold] YFinance        [dim]data/theta.py[/dim]           proxy: theta decay + price move (default)")
+
     # Agent pipeline
     pipeline = root.add("[bold green]Agent Pipeline[/bold green]  (state: PortfolioState)")
 

@@ -26,8 +26,12 @@ class TradeEvaluator:
     Reads:  state.proposals
     Writes: proposal.eval_stats, proposal.position_size_pct, state.alerts
 
-    NOTE: This agent is slow (fetches bars + runs simulations). Enable with
-    `--eval` flag in agent_pipeline.py.
+    Backend priority (first available wins):
+      1. TastytradeBacktester — real fills via tastytrade backtesting API
+         (requires tastytrade_token in config.yaml)
+      2. YFinanceOptionsProvider — proxy via theta decay + price moves
+
+    NOTE: This agent is slow. Enable with `--eval` flag in agent_pipeline.py.
     """
 
     def __init__(
@@ -35,24 +39,36 @@ class TradeEvaluator:
         lookback_days: int = LOOKBACK_DAYS,
         min_sample_size: int = MIN_SAMPLE_SIZE,
         provider=None,
+        backtester=None,
     ):
         self.lookback_days = lookback_days
         self.min_sample_size = min_sample_size
-        self.provider = provider  # None → auto-select via get_provider()
+        self.provider = provider    # OptionsDataProvider (yfinance / theta)
+        self.backtester = backtester  # TastytradeBacktester or None
 
     def run(self, state: PortfolioState) -> PortfolioState:
         """Evaluate each proposal with historical backtest data."""
         if not state.proposals:
             return state
 
+        # Resolve backtester (tastytrade API — real fills)
+        backtester = self.backtester
+        if backtester is None:
+            from ..data.tasty_backtest import get_backtester
+            backtester = get_backtester()
+
+        # Resolve chain provider (yfinance proxy fallback)
         provider = self.provider
         if provider is None:
             from ..data.theta import get_provider
             provider = get_provider()
 
+        backend = "TastytradeBacktester" if backtester else type(provider).__name__
+        logger.info("Evaluator backend: %s", backend)
+
         for proposal in state.proposals:
             try:
-                result = self._evaluate_proposal(proposal, provider)
+                result = self._evaluate_proposal(proposal, backtester, provider)
                 self._attach_stats(proposal, result, state)
             except Exception:
                 logger.exception("Evaluator error for %s %s", proposal.symbol, proposal.strategy_type)
@@ -61,17 +77,28 @@ class TradeEvaluator:
         return state
 
     def _evaluate_proposal(
-        self, proposal: TradeProposal, provider
+        self, proposal: TradeProposal, backtester, provider
     ) -> OptionsBacktestResult:
-        """Run backtest for a single proposal."""
-        # Infer DTE range from proposal
+        """Run backtest for a single proposal, preferring tastytrade API."""
         dte_max = proposal.max_dte
         dte_min = max(dte_max - 15, 21)
+
+        if backtester is not None:
+            return backtester.run_backtest(
+                symbol=proposal.symbol,
+                strategy_type=proposal.strategy_type,
+                delta_target=0.16,
+                dte_range=(dte_min, dte_max),
+                lookback_days=self.lookback_days,
+                profit_target_pct=proposal.profit_target_pct,
+                stop_loss_pct=200.0,
+                max_dte_exit=21,
+            )
 
         return backtest_structure(
             symbol=proposal.symbol,
             strategy_type=proposal.strategy_type,
-            delta_target=0.16,  # Standard short-delta target
+            delta_target=0.16,
             dte_range=(dte_min, dte_max),
             lookback_days=self.lookback_days,
             profit_target_pct=proposal.profit_target_pct,
