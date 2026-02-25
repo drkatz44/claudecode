@@ -27,12 +27,14 @@ from conftest import generate_bars
 # --- Fixtures ---
 
 def _make_option(strike, option_type, bid, ask, iv=None, oi=100, volume=50):
-    """Create a synthetic OptionQuote."""
+    """Create a synthetic OptionQuote with ~35 DTE expiry (future-dated)."""
+    from datetime import date
+    expiry = datetime.now() + timedelta(days=35)
     return OptionQuote(
-        symbol=f"AAPL250321{option_type[0].upper()}{int(strike*1000):08d}",
+        symbol=f"AAPL{expiry.strftime('%y%m%d')}{option_type[0].upper()}{int(strike*1000):08d}",
         underlying="AAPL",
         strike=Decimal(str(strike)),
-        expiration=datetime(2025, 3, 21),
+        expiration=expiry,
         option_type=option_type,
         bid=Decimal(str(bid)),
         ask=Decimal(str(ask)),

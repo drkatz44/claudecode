@@ -123,3 +123,47 @@ class Fundamentals(BaseModel):
     industry: Optional[str] = None
     next_earnings: Optional[datetime] = None
     fetched_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class CotReport(BaseModel):
+    """Raw CFTC Commitments of Traders positioning data (disaggregated futures)."""
+    commodity: str
+    report_date: datetime
+    managed_money_long: int
+    managed_money_short: int
+    managed_money_spreading: int
+    commercial_long: int
+    commercial_short: int
+    non_reportable_long: int
+    non_reportable_short: int
+    open_interest: int
+
+
+class CotAnalysis(BaseModel):
+    """Derived analytics from COT positioning data."""
+    commodity: str
+    report_date: datetime
+    mm_net: int = Field(description="Managed money net (long - short)")
+    mm_net_pct: float = Field(description="MM net as pct of open interest")
+    z_score: float = Field(description="Z-score of MM net vs 1yr history")
+    positioning_signal: str = Field(description="extreme_long|extreme_short|neutral")
+    weekly_change: int = Field(description="Week-over-week change in MM net")
+
+
+class ComexWarehouse(BaseModel):
+    """COMEX warehouse stock levels."""
+    metal: str
+    date: datetime
+    registered: float = Field(description="Registered stocks (eligible for delivery)")
+    eligible: float = Field(description="Eligible stocks (stored but not for delivery)")
+    total: float = Field(description="Registered + eligible")
+    unit: str = Field(default="troy_oz", description="troy_oz or lbs")
+
+
+class ComexAnalysis(BaseModel):
+    """Derived analytics from COMEX warehouse data."""
+    metal: str
+    date: datetime
+    registered_pct: float = Field(description="Registered as pct of total")
+    trend: str = Field(description="drawing|building|stable")
+    change_30d_pct: float = Field(description="30-day change in total stocks %")

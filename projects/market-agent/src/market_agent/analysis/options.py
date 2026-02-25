@@ -121,61 +121,72 @@ def find_strike_by_delta(
     option_type: str,
     underlying_price: Decimal,
 ) -> Optional[OptionQuote]:
-    """Find the strike closest to target delta using moneyness approximation.
+    """Find the strike closest to target delta.
 
-    Delta approximation via OTM percentage (yfinance has no Greeks):
-        - 0.50 delta ≈ ATM
-        - 0.30 delta ≈ 5% OTM
-        - 0.20 delta ≈ 7% OTM
-        - 0.16 delta ≈ 8-10% OTM
-        - 0.10 delta ≈ 12% OTM
+    Uses Black-Scholes delta when IV is available on the OptionQuote (yfinance
+    provides IV, so this is the primary path). Falls back to a moneyness
+    approximation when IV is missing.
 
     Args:
         chain: Option chain
-        target_delta: Target delta (0-1, always positive)
+        target_delta: Target delta (0-1, always positive — sign inferred from option_type)
         option_type: "call" or "put"
         underlying_price: Current underlying price
     """
+    from .black_scholes import bs_delta as _bs_delta, DEFAULT_RISK_FREE_RATE
+
     price = float(underlying_price)
     if price <= 0:
         return None
 
-    # Map delta to approximate OTM percentage
-    # Using a simple linear interpolation
-    delta_to_otm = {0.50: 0.0, 0.40: 0.02, 0.30: 0.05, 0.25: 0.06,
-                    0.20: 0.07, 0.16: 0.09, 0.10: 0.12, 0.05: 0.18}
-
-    # Interpolate target OTM %
-    deltas = sorted(delta_to_otm.keys(), reverse=True)
-    target_otm = None
-    for i, d in enumerate(deltas):
-        if target_delta >= d:
-            if i == 0:
-                target_otm = delta_to_otm[d]
-            else:
-                # Linear interpolation
-                d_high = deltas[i - 1]
-                d_low = d
-                otm_high = delta_to_otm[d_high]
-                otm_low = delta_to_otm[d_low]
-                frac = (target_delta - d_low) / (d_high - d_low) if d_high != d_low else 0
-                target_otm = otm_low + frac * (otm_high - otm_low)
-            break
-    if target_otm is None:
-        target_otm = 0.20  # very far OTM
-
-    # Calculate target strike
-    if option_type == "put":
-        target_strike = price * (1 - target_otm)
-    else:
-        target_strike = price * (1 + target_otm)
-
-    # Find closest matching option
+    today = datetime.now().date()
     candidates = [q for q in chain if q.option_type == option_type and float(q.bid) > 0]
     if not candidates:
         return None
 
-    return min(candidates, key=lambda q: abs(float(q.strike) - target_strike))
+    def _option_delta(q: OptionQuote) -> float:
+        """Return abs(delta) for the option, using BS if IV available."""
+        if q.iv and float(q.iv) > 0:
+            exp_date = q.expiration.date() if hasattr(q.expiration, "date") else q.expiration
+            T = max((exp_date - today).days / 365.0, 1 / 365.0)
+            d = _bs_delta(price, float(q.strike), T, DEFAULT_RISK_FREE_RATE,
+                          float(q.iv), option_type)
+            return abs(d)
+        # Fallback: moneyness approximation
+        return _moneyness_delta(price, float(q.strike), option_type)
+
+    return min(candidates, key=lambda q: abs(_option_delta(q) - target_delta))
+
+
+def _moneyness_delta(price: float, strike: float, option_type: str) -> float:
+    """Approximate delta from moneyness when IV is unavailable.
+
+    Maps OTM distance to delta using empirical calibration:
+        ATM      → 0.50
+        5% OTM   → 0.30
+        9% OTM   → 0.16
+        12% OTM  → 0.10
+        18% OTM  → 0.05
+    """
+    if price <= 0:
+        return 0.0
+    if option_type == "put":
+        otm_pct = max(0.0, (price - strike) / price)
+    else:
+        otm_pct = max(0.0, (strike - price) / price)
+
+    # Piecewise linear interpolation of delta vs OTM%
+    breakpoints = [(0.0, 0.50), (0.02, 0.40), (0.05, 0.30), (0.06, 0.25),
+                   (0.07, 0.20), (0.09, 0.16), (0.12, 0.10), (0.18, 0.05), (0.25, 0.02)]
+
+    for i in range(len(breakpoints) - 1):
+        x0, d0 = breakpoints[i]
+        x1, d1 = breakpoints[i + 1]
+        if x0 <= otm_pct <= x1:
+            frac = (otm_pct - x0) / (x1 - x0)
+            return d0 + frac * (d1 - d0)
+
+    return 0.01  # Far OTM
 
 
 def find_optimal_expiry(

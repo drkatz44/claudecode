@@ -1,18 +1,23 @@
 """Orchestrator — sequences agents and enforces portfolio constraints.
 
-Pipeline: RegimeDetector → TradeArchitect → (future: Evaluator → RiskMonitor → MadmanScout)
+Full pipeline (Phase 2):
+  RegimeDetector → TradeArchitect → TradeEvaluator → RiskMonitor → MadmanScout → Constraints
 
 The orchestrator enforces cross-cutting constraints:
 - Max buying power usage
 - Max concurrent positions
 - Sector/correlation limits
+- Risk score ceiling
 """
 
 import logging
 from decimal import Decimal
 
 from .architect import TradeArchitect
+from .evaluator import TradeEvaluator
+from .madman import MadmanScout
 from .regime import RegimeDetector
+from .risk_monitor import RiskMonitor
 from .state import PortfolioState, TradeProposal
 
 logger = logging.getLogger(__name__)
@@ -22,6 +27,7 @@ MAX_BP_USAGE_PCT = 50.0       # Never exceed 50% BP
 MAX_POSITIONS = 15            # Max concurrent open positions
 MAX_SECTOR_ALLOCATION = 3     # Max proposals per sector/underlying
 MAX_SINGLE_POSITION_PCT = 5.0 # No single position > 5% of net liq
+MAX_RISK_SCORE = 0.80         # Reject proposals with risk_score above this
 
 
 class Orchestrator:
@@ -32,6 +38,10 @@ class Orchestrator:
         orchestrator = Orchestrator()
         state = orchestrator.run(state)
         # state.proposals now contains filtered, risk-checked proposals
+
+    With evaluation (slow — backtests each proposal):
+        orchestrator = Orchestrator(enable_eval=True)
+        state = orchestrator.run(state)
     """
 
     def __init__(
@@ -39,15 +49,21 @@ class Orchestrator:
         max_proposals: int = 10,
         max_bp_pct: float = MAX_BP_USAGE_PCT,
         max_positions: int = MAX_POSITIONS,
+        enable_eval: bool = False,
+        enable_madman: bool = True,
     ):
         self.regime_detector = RegimeDetector()
         self.trade_architect = TradeArchitect(max_proposals=max_proposals)
+        self.trade_evaluator = TradeEvaluator() if enable_eval else None
+        self.risk_monitor = RiskMonitor()
+        self.madman_scout = MadmanScout() if enable_madman else None
         self.max_bp_pct = max_bp_pct
         self.max_positions = max_positions
 
     def run(self, state: PortfolioState) -> PortfolioState:
         """Run the full agent pipeline."""
-        logger.info("Starting agent pipeline...")
+        logger.info("Starting agent pipeline (eval=%s, madman=%s)...",
+                    self.trade_evaluator is not None, self.madman_scout is not None)
 
         # Step 1: Detect regime
         state = self.regime_detector.run(state)
@@ -58,7 +74,18 @@ class Orchestrator:
         # Step 2: Generate proposals
         state = self.trade_architect.run(state)
 
-        # Step 3: Apply portfolio constraints
+        # Step 3: Historical evaluation + Kelly sizing (optional — slow)
+        if self.trade_evaluator is not None:
+            state = self.trade_evaluator.run(state)
+
+        # Step 4: Risk scoring + in-trade alerts
+        state = self.risk_monitor.run(state)
+
+        # Step 5: Madman / asymmetric opportunities
+        if self.madman_scout is not None:
+            state = self.madman_scout.run(state)
+
+        # Step 6: Apply portfolio constraints
         state = self._apply_constraints(state)
 
         logger.info(
@@ -96,12 +123,20 @@ class Orchestrator:
             state.proposals = []
             return state
 
-        # Filter: no single position > MAX_SINGLE_POSITION_PCT
+        # Filter: enforce size, concentration, risk score, and BP limits
         filtered: list[TradeProposal] = []
         symbol_count: dict[str, int] = {}
         cumulative_bp_pct = current_bp_usage
 
         for proposal in state.proposals:
+            # Risk score ceiling (madman proposals bypass this — they're intentionally risky)
+            if not proposal.is_madman and proposal.risk_score > MAX_RISK_SCORE:
+                state.alerts.append(
+                    f"INFO: {proposal.symbol} {proposal.strategy_type} "
+                    f"risk_score={proposal.risk_score:.2f} > {MAX_RISK_SCORE} — skipped"
+                )
+                continue
+
             # Position size check
             if proposal.position_size_pct > MAX_SINGLE_POSITION_PCT:
                 continue
