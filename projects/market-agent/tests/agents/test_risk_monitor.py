@@ -11,7 +11,11 @@ from market_agent.agents.risk_monitor import (
     STRATEGY_REGIME_FIT,
     DTE_ROLL_THRESHOLD,
     DELTA_BREACH_THRESHOLD,
+    DELTA_HEAT_ALERT_PCT,
+    DELTA_HEAT_SCORE_HIGH,
+    DELTA_HEAT_SCORE_MED,
     LOSS_MULTIPLIER_CLOSE,
+    THETA_HEAT_ALERT_PCT,
 )
 from market_agent.agents.state import PortfolioState, RegimeState, TradeProposal, VolRegime
 
@@ -288,6 +292,123 @@ class TestInTradeAlerts:
         RiskMonitor().run(state)
         new_alerts = [a for a in state.alerts if a not in initial_alerts]
         assert not any("ROLL" in a or "CLOSE" in a or "ADJUST" in a for a in new_alerts)
+
+
+class TestSectorCorrelationScore:
+    def test_empty_positions_zero_score(self):
+        monitor = RiskMonitor()
+        proposal = _make_proposal(symbol="SPY")
+        state = _make_state(open_positions=[])
+        assert monitor._correlation_score(proposal, state) == 0.0
+
+    def test_same_symbol_raises_score(self):
+        monitor = RiskMonitor()
+        proposal = _make_proposal(symbol="SPY")
+        state = _make_state(open_positions=[{"symbol": "SPY"}])
+        score = monitor._correlation_score(proposal, state)
+        assert score == pytest.approx(0.5)
+
+    def test_different_symbol_same_sector_tight_returns_sector_score(self):
+        # SPY and IWM are both "broad" sector
+        # Fill broad sector to near cap so headroom < 10
+        monitor = RiskMonitor()
+        proposal = _make_proposal(symbol="SPY")
+        positions = [{"symbol": "IWM", "position_size_pct": 22.0}]  # 22% used → 8% headroom
+        state = _make_state(open_positions=positions)
+        score = monitor._correlation_score(proposal, state)
+        assert score == pytest.approx(0.5)  # headroom < 10 → sector_score = 0.5
+
+    def test_sector_over_limit_returns_one(self):
+        monitor = RiskMonitor()
+        proposal = _make_proposal(symbol="SPY")
+        # 35% in broad sector → over the 30% limit → headroom < 0
+        positions = [{"symbol": "IWM", "position_size_pct": 35.0}]
+        state = _make_state(open_positions=positions)
+        score = monitor._correlation_score(proposal, state)
+        assert score == pytest.approx(1.0)
+
+    def test_different_sector_zero_score(self):
+        monitor = RiskMonitor()
+        proposal = _make_proposal(symbol="SPY")  # broad
+        # QQQ=tech, GLD=metals — neither broad
+        state = _make_state(open_positions=[{"symbol": "QQQ"}, {"symbol": "GLD"}])
+        assert monitor._correlation_score(proposal, state) == 0.0
+
+
+class TestPortfolioHeatScore:
+    def test_cool_portfolio_zero_score(self):
+        monitor = RiskMonitor()
+        proposal = _make_proposal()
+        state = _make_state()
+        state.portfolio_delta = 0.0
+        score = monitor._portfolio_heat_score(proposal, state)
+        assert score == 0.0
+
+    def test_moderate_delta_medium_score(self):
+        monitor = RiskMonitor()
+        proposal = _make_proposal()
+        state = _make_state(net_liq=100000)
+        # delta_pct = 12000 / 100000 * 100 = 12% — above MED threshold
+        state.portfolio_delta = 12000.0
+        score = monitor._portfolio_heat_score(proposal, state)
+        assert score == pytest.approx(0.4)
+
+    def test_high_delta_high_score(self):
+        monitor = RiskMonitor()
+        proposal = _make_proposal()
+        state = _make_state(net_liq=100000)
+        # delta_pct = 25000 / 100000 * 100 = 25% — above HIGH threshold
+        state.portfolio_delta = 25000.0
+        score = monitor._portfolio_heat_score(proposal, state)
+        assert score == pytest.approx(0.8)
+
+    def test_negative_delta_uses_abs_value(self):
+        monitor = RiskMonitor()
+        proposal = _make_proposal()
+        state = _make_state(net_liq=100000)
+        state.portfolio_delta = -25000.0  # same magnitude, negative direction
+        score = monitor._portfolio_heat_score(proposal, state)
+        assert score == pytest.approx(0.8)
+
+    def test_zero_net_liq_returns_moderate(self):
+        monitor = RiskMonitor()
+        proposal = _make_proposal()
+        state = _make_state(net_liq=0)
+        score = monitor._portfolio_heat_score(proposal, state)
+        assert score == pytest.approx(0.5)
+
+
+class TestPortfolioHeatAlerts:
+    def test_high_delta_generates_alert(self):
+        state = _make_state(net_liq=100000)
+        state.portfolio_delta = 30000.0  # 30% > 25% threshold
+        RiskMonitor().run(state)
+        assert any("Portfolio delta" in a and "WARN" in a for a in state.alerts)
+
+    def test_normal_delta_no_alert(self):
+        state = _make_state(net_liq=100000)
+        state.portfolio_delta = 5000.0  # 5% < 25% threshold
+        RiskMonitor().run(state)
+        assert not any("Portfolio delta" in a for a in state.alerts)
+
+    def test_high_theta_generates_alert(self):
+        state = _make_state(net_liq=100000)
+        # theta_daily_pct = 1500 / 100000 * 100 = 1.5% > 1.0% threshold
+        state.portfolio_theta = 1500.0
+        RiskMonitor().run(state)
+        assert any("theta" in a and "WARN" in a for a in state.alerts)
+
+    def test_normal_theta_no_alert(self):
+        state = _make_state(net_liq=100000)
+        state.portfolio_theta = 500.0  # 0.5% < 1.0% threshold
+        RiskMonitor().run(state)
+        assert not any("theta" in a for a in state.alerts)
+
+    def test_zero_theta_no_alert(self):
+        state = _make_state(net_liq=100000)
+        state.portfolio_theta = 0.0
+        RiskMonitor().run(state)
+        assert not any("theta" in a for a in state.alerts)
 
 
 class TestStrategyRegimeFitConstants:

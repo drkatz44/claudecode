@@ -23,6 +23,7 @@ Writes: proposal.risk_score, state.alerts
 import logging
 from decimal import Decimal
 
+from ..analysis.sectors import get_sector, sector_headroom
 from .state import PortfolioState, TradeProposal, VolRegime
 
 logger = logging.getLogger(__name__)
@@ -45,6 +46,12 @@ DTE_ROLL_THRESHOLD = 21        # Roll at or below this DTE
 DELTA_BREACH_THRESHOLD = 0.30  # Abs delta above which to alert
 LOSS_MULTIPLIER_CLOSE = 2.0    # Close alert when loss > 2x credit
 
+# Portfolio heat thresholds (delta as % of net liq)
+DELTA_HEAT_ALERT_PCT = 25.0    # Warn when portfolio delta exceeds this %
+DELTA_HEAT_SCORE_HIGH = 20.0   # Heat score = 0.8 above this
+DELTA_HEAT_SCORE_MED = 10.0    # Heat score = 0.4 above this
+THETA_HEAT_ALERT_PCT = 1.0     # Warn when daily theta > 1% of net liq
+
 
 class RiskMonitor:
     """Computes entry-time risk scores and generates in-trade adjustment alerts.
@@ -61,6 +68,9 @@ class RiskMonitor:
 
         # Check open positions for adjustment triggers
         self._check_open_positions(state)
+
+        # Portfolio-level heat alerts (independent of individual positions)
+        self._check_portfolio_heat(state)
 
         logger.info(
             "Risk Monitor: scored %d proposals, checked %d open positions",
@@ -80,17 +90,21 @@ class RiskMonitor:
         bp_score = self._bp_impact_score(proposal, state)
         scores.append(bp_score * 0.30)  # 30% weight
 
-        # 2. Correlation / concentration (0 = unique, 1 = already max)
+        # 2. Sector correlation / concentration (0 = unique sector, 1 = at cap)
         corr_score = self._correlation_score(proposal, state)
-        scores.append(corr_score * 0.25)  # 25% weight
+        scores.append(corr_score * 0.20)  # 20% weight
 
         # 3. Regime fit (0 = perfectly aligned, 1 = wrong regime)
         regime_score = self._regime_fit_score(proposal, state)
-        scores.append(regime_score * 0.30)  # 30% weight
+        scores.append(regime_score * 0.25)  # 25% weight
 
         # 4. IVR score (0 = very high IVR = good entry, 1 = very low IVR = risky)
         ivr_score = self._ivr_score(state)
-        scores.append(ivr_score * 0.15)  # 15% weight
+        scores.append(ivr_score * 0.10)  # 10% weight
+
+        # 5. Portfolio heat (0 = cool portfolio, 0.8 = already heavily directional)
+        heat_score = self._portfolio_heat_score(proposal, state)
+        scores.append(heat_score * 0.15)  # 15% weight
 
         composite = sum(scores)
         return round(min(max(composite, 0.0), 1.0), 3)
@@ -107,15 +121,25 @@ class RiskMonitor:
         return min(bp_fraction * 3.0, 1.0)  # Scale: 33% of BP = score 1.0
 
     def _correlation_score(self, proposal: TradeProposal, state: PortfolioState) -> float:
-        """Higher score if same underlying already in portfolio."""
-        if not state.open_positions:
-            return 0.0
+        """Higher score if same underlying or same sector is concentrated in portfolio."""
+        # Same-symbol concentration (hard limit — most correlated)
         same_underlying = sum(
             1 for p in state.open_positions
             if p.get("symbol", "").upper() == proposal.symbol.upper()
         )
-        # 0 same = 0.0, 1 same = 0.5, 2+ same = 1.0
-        return min(same_underlying * 0.5, 1.0)
+        symbol_score = min(same_underlying * 0.5, 1.0)
+
+        # Sector concentration — how much headroom remains in this sector
+        sector = get_sector(proposal.symbol)
+        headroom = sector_headroom(sector, state.open_positions, float(state.net_liq))
+        if headroom < 0:
+            sector_score = 1.0   # Already over sector limit
+        elif headroom < 10:
+            sector_score = 0.5   # Sector getting full
+        else:
+            sector_score = 0.0   # Plenty of room
+
+        return max(symbol_score, sector_score)
 
     def _regime_fit_score(self, proposal: TradeProposal, state: PortfolioState) -> float:
         """Lower score when strategy is well-matched to the current regime."""
@@ -135,9 +159,46 @@ class RiskMonitor:
         # IVR 75+ = 0.0 (great), IVR 25 = 0.5, IVR <10 = 1.0 (terrible)
         return max(0.0, min((75 - ivr) / 75, 1.0))
 
+    def _portfolio_heat_score(self, proposal: TradeProposal, state: PortfolioState) -> float:
+        """Higher score when portfolio is already heavily directional.
+
+        Discourages adding exposure to an already-hot portfolio — one of the
+        key lessons from blow-ups where directional risk builds unnoticed.
+        """
+        net_liq = float(state.net_liq)
+        if net_liq <= 0:
+            return 0.5
+        delta_pct = abs(state.portfolio_delta) * 100 / net_liq
+        if delta_pct > DELTA_HEAT_SCORE_HIGH:
+            return 0.8
+        elif delta_pct > DELTA_HEAT_SCORE_MED:
+            return 0.4
+        return 0.0
+
     # ------------------------------------------------------------------
     # In-trade alerts
     # ------------------------------------------------------------------
+
+    def _check_portfolio_heat(self, state: PortfolioState) -> None:
+        """Generate portfolio-level heat alerts. Hard stops, not suggestions."""
+        net_liq = float(state.net_liq)
+        if net_liq <= 0:
+            return
+
+        delta_pct = abs(state.portfolio_delta) * 100 / net_liq
+        if delta_pct > DELTA_HEAT_ALERT_PCT:
+            state.alerts.append(
+                f"WARN: Portfolio delta {delta_pct:.1f}% of net liq "
+                f"(>{DELTA_HEAT_ALERT_PCT}%) — reduce directional exposure"
+            )
+
+        if state.portfolio_theta != 0:
+            theta_daily_pct = abs(state.portfolio_theta) / net_liq * 100
+            if theta_daily_pct > THETA_HEAT_ALERT_PCT:
+                state.alerts.append(
+                    f"WARN: Portfolio theta {theta_daily_pct:.2f}%/day "
+                    f"(>{THETA_HEAT_ALERT_PCT}%) — premium concentration high"
+                )
 
     def _check_open_positions(self, state: PortfolioState) -> None:
         """Generate adjustment alerts for open positions."""

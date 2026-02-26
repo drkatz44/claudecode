@@ -114,6 +114,42 @@ def position_size_pct(
     return max(min_pct, min(size, max_pct))
 
 
+# ATR reference — SPY-like 20-day ATR as % of price
+_REFERENCE_ATR_PCT = 1.5
+
+
+def atr_position_size_pct(
+    atr_pct: float,
+    regime_default_pct: float,
+    min_pct: float = 0.5,
+    max_pct: float = 5.0,
+) -> float:
+    """ATR-normalized position sizing.
+
+    Scales regime-default position size by inverse volatility so each
+    position represents approximately equal expected daily dollar risk.
+    High-ATR underlyings (TSLA ~3%) → smaller positions.
+    Low-ATR underlyings (SPY ~0.8%) → slightly larger positions (up to cap).
+
+    Blended 50/50 with regime default so ATR adjustment doesn't completely
+    override the regime playbook — the regime context matters too.
+
+    Args:
+        atr_pct:            20-day ATR as % of underlying price (e.g., 1.5)
+        regime_default_pct: Regime-based default allocation %
+        min_pct:            Floor position size %
+        max_pct:            Ceiling position size %
+
+    Returns:
+        ATR-adjusted position size as % of portfolio.
+    """
+    if atr_pct <= 0:
+        return regime_default_pct
+    scalar = _REFERENCE_ATR_PCT / atr_pct  # >1 for low-vol, <1 for high-vol
+    blended = regime_default_pct * (0.5 + 0.5 * scalar)
+    return round(max(min_pct, min(blended, max_pct)), 3)
+
+
 def expected_value(
     win_rate: float,
     avg_win_pct: float,

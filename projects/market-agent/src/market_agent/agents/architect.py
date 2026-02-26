@@ -8,7 +8,9 @@ import logging
 from decimal import Decimal
 
 from .. import validate_symbol
+from ..analysis.kelly import atr_position_size_pct
 from ..analysis.options import iv_rank, options_summary, resolve_strategy
+from ..analysis.technical import atr as compute_atr
 from ..analysis.vol_regime import compute_ivx
 from ..data.fetcher import get_bars
 from ..data.futures import ETF_UNIVERSE, FUTURES_UNIVERSE, is_futures
@@ -34,7 +36,7 @@ REGIME_PLAYBOOK: dict[VolRegime, dict] = {
         "position_size_pct": 2.0,
         "min_ivr": 25,
         "delta_target": 0.16,
-        "dte_range": (30, 45),
+        "dte_range": (38, 52),  # TastyTrade empirical data: 45 DTE midpoint is optimal
         "profit_target_pct": 50.0,
         "rationale_prefix": "Normal vol regime — standard premium selling",
     },
@@ -118,6 +120,18 @@ class TradeArchitect:
         underlying_price = Decimal(str(summary["underlying_price"]))
         ivx = compute_ivx(bars)
 
+        # ATR-normalized position sizing — equal expected daily dollar risk per position
+        atr_series = compute_atr(bars, period=20)
+        atr_valid = atr_series.dropna()
+        if not atr_valid.empty and float(underlying_price) > 0:
+            atr_pct = float(atr_valid.iloc[-1]) / float(underlying_price) * 100
+            sized_pct = atr_position_size_pct(
+                atr_pct=atr_pct,
+                regime_default_pct=playbook["position_size_pct"],
+            )
+        else:
+            sized_pct = playbook["position_size_pct"]
+
         # Try strategies in playbook order until one resolves
         for strategy_type in playbook["strategies"]:
             resolved = resolve_strategy(
@@ -146,7 +160,7 @@ class TradeArchitect:
                 strategy_type=strategy_type,
                 legs=resolved.get("legs", []),
                 regime=regime,
-                position_size_pct=playbook["position_size_pct"],
+                position_size_pct=sized_pct,
                 profit_target_pct=playbook["profit_target_pct"],
                 max_dte=playbook["dte_range"][1],
                 rationale=rationale,

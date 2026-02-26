@@ -3,6 +3,8 @@
 import pytest
 
 from market_agent.analysis.kelly import (
+    _REFERENCE_ATR_PCT,
+    atr_position_size_pct,
     expected_value,
     half_kelly,
     kelly_fraction,
@@ -105,6 +107,51 @@ class TestPositionSizePct:
         size_strong = position_size_pct(92, 80, 20, default_pct=2.0, max_pct=5.0)
         size_weak = position_size_pct(35, 20, 200, default_pct=2.0, min_pct=0.5)
         assert size_strong >= size_weak
+
+
+class TestAtrPositionSizePct:
+    def test_reference_vol_returns_near_default(self):
+        # ATR = reference (1.5%) → scalar = 1.0 → blended = default * (0.5 + 0.5) = default
+        size = atr_position_size_pct(atr_pct=_REFERENCE_ATR_PCT, regime_default_pct=2.0)
+        assert size == pytest.approx(2.0)
+
+    def test_high_vol_reduces_size(self):
+        # ATR = 3.0% (2x reference) → scalar = 0.5 → blended = 2.0 * 0.75 = 1.5
+        size = atr_position_size_pct(atr_pct=3.0, regime_default_pct=2.0)
+        assert size < 2.0
+
+    def test_low_vol_increases_size(self):
+        # ATR = 0.75% (half reference) → scalar = 2.0 → blended = 2.0 * 1.5 = 3.0
+        size = atr_position_size_pct(atr_pct=0.75, regime_default_pct=2.0)
+        assert size > 2.0
+
+    def test_zero_atr_returns_default(self):
+        size = atr_position_size_pct(atr_pct=0.0, regime_default_pct=2.0)
+        assert size == pytest.approx(2.0)
+
+    def test_negative_atr_returns_default(self):
+        size = atr_position_size_pct(atr_pct=-1.0, regime_default_pct=2.0)
+        assert size == pytest.approx(2.0)
+
+    def test_respects_min_pct(self):
+        # Very high ATR → would compute tiny size, but floored at min
+        size = atr_position_size_pct(atr_pct=50.0, regime_default_pct=2.0, min_pct=0.5)
+        assert size >= 0.5
+
+    def test_respects_max_pct(self):
+        # Very low ATR → would compute large size, but capped at max
+        size = atr_position_size_pct(atr_pct=0.01, regime_default_pct=2.0, max_pct=5.0)
+        assert size <= 5.0
+
+    def test_high_vol_lower_than_low_vol(self):
+        high_vol = atr_position_size_pct(atr_pct=4.0, regime_default_pct=2.0)
+        low_vol = atr_position_size_pct(atr_pct=0.5, regime_default_pct=2.0)
+        assert high_vol < low_vol
+
+    def test_result_always_positive(self):
+        for atr in [0.1, 0.5, 1.0, 1.5, 3.0, 5.0, 10.0]:
+            size = atr_position_size_pct(atr_pct=atr, regime_default_pct=2.0)
+            assert size > 0, f"atr_pct={atr} produced non-positive size {size}"
 
 
 class TestExpectedValue:
