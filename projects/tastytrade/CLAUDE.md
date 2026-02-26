@@ -120,6 +120,65 @@ Output shape:
 }
 ```
 
+## Chain Builder Agent
+
+Use this Task prompt to spawn a chain-builder subagent. It absorbs option chain + greeks data and returns a compact order-ready strategy dict.
+
+```
+subagent_type: "general-purpose"
+model: "haiku"
+prompt: |
+  You are a tastytrade chain-builder agent. Your job:
+  1. Call MCP get_option_chain(symbol=<SYMBOL>, nested=True) via tasty-agent
+  2. Save response to /tmp/chain.json
+  3. Identify candidate strikes for target DTE <DTE> and strategy <STRATEGY>
+  4. Call MCP get_greeks(symbols=[...candidate OCC symbols...]) for those strikes
+  5. Save greeks response to /tmp/greeks.json
+  6. Run the builder:
+       uv run -C /Users/drk/Code/claudecode/projects/tastytrade \
+         tt-strategy build-strategy <STRATEGY> \
+         --dte <DTE> \
+         --put-delta <PUT_DELTA> \
+         --call-delta <CALL_DELTA> \
+         --long-put-delta <LONG_PUT_DELTA> \
+         --long-call-delta <LONG_CALL_DELTA> \
+         --chain /tmp/chain.json \
+         --greeks /tmp/greeks.json \
+         --quantity <QUANTITY>
+  7. Return the JSON output exactly as-is.
+
+  Inputs:
+  - symbol: <SYMBOL>            # e.g. "SPY"
+  - strategy: <STRATEGY>        # short_put | vertical_spread | iron_condor | strangle
+  - dte: <DTE>                  # target days to expiration, e.g. 45
+  - put_delta: <PUT_DELTA>      # short put/call delta, e.g. 0.30
+  - call_delta: <CALL_DELTA>    # default same as put_delta
+  - long_put_delta: <LONG_PUT_DELTA>   # wing delta, e.g. 0.16
+  - long_call_delta: <LONG_CALL_DELTA> # default same as long_put_delta
+  - quantity: <QUANTITY>        # default 1
+
+  Return only the JSON output. No commentary.
+```
+
+Output shape:
+```json
+{
+  "strategy_type": "iron_condor",
+  "underlying": "SPY",
+  "expiration_date": "2024-04-19",
+  "put_strikes": { "short": 490.0, "long": 485.0, "width": 5.0 },
+  "call_strikes": { "short": 510.0, "long": 515.0, "width": 5.0 },
+  "credit": 1.85,
+  "quantity": 1,
+  "legs": [
+    { "symbol": "SPY   240419P00485000", "action": "Buy to Open", "quantity": 1, "option_type": "P", "strike_price": 485.0, "expiration_date": "2024-04-19" },
+    ...
+  ],
+  "risk": { "max_profit": 185.0, "max_loss": 315.0, "breakevens": [488.15, 511.85], "risk_reward_ratio": 1.70 },
+  "summary": "Iron Condor: SPY 2024-04-19 485/490/510/515 x1 @ 1.85"
+}
+```
+
 ## Roadmap
 
 Potential next areas (in no particular order):

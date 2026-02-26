@@ -15,9 +15,11 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
+from .chain_builder import ChainBuilderError, build_iron_condor, build_short_put, build_strangle, build_vertical_spread
+from .chain_parser import parse_greeks_response, parse_nested_chain
 from .journal import Journal
 from .mcp_parser import parse_market_metrics_response
-from .models import MarketMetrics, OrderLeg, RiskProfile
+from .models import Direction, MarketMetrics, OptionType, OrderLeg, RiskProfile
 from .risk import check_trade, portfolio_from_positions
 from .screener import ScreenCriteria, screen
 
@@ -229,6 +231,123 @@ def screen_agent(
     }
 
     typer.echo(json.dumps(output, indent=2))
+
+
+# ---------------------------------------------------------------------------
+# Build strategy command (JSON output for Claude Task subagents)
+# ---------------------------------------------------------------------------
+
+_STRATEGIES = ["short_put", "vertical_spread", "iron_condor", "strangle"]
+
+@app.command()
+def build_strategy(
+    strategy: str = typer.Argument(..., help=f"Strategy type: {', '.join(_STRATEGIES)}"),
+    dte: int = typer.Option(45, "--dte", help="Target days to expiration"),
+    put_delta: float = typer.Option(0.30, "--put-delta", help="Short put delta (absolute)"),
+    call_delta: float = typer.Option(0.30, "--call-delta", help="Short call delta (absolute)"),
+    long_put_delta: float = typer.Option(0.16, "--long-put-delta", help="Long put wing delta"),
+    long_call_delta: float = typer.Option(0.16, "--long-call-delta", help="Long call wing delta"),
+    quantity: int = typer.Option(1, "--quantity", "-q", help="Number of contracts"),
+    chain_file: Path | None = typer.Option(None, "--chain", "-c", help="Nested option chain JSON (default: stdin)"),
+    greeks_file: Path | None = typer.Option(None, "--greeks", "-g", help="Greeks JSON file (optional)"),
+):
+    """Build a strategy from an option chain. Outputs order-ready JSON.
+
+    Reads nested option chain JSON from --chain file or stdin.
+    Optionally enriches strikes with greeks from --greeks file.
+    Designed for agent use — outputs machine-readable JSON.
+
+    Usage (pipe chain from MCP):
+        echo '<chain_response>' | uv run tt-strategy build-strategy iron_condor --dte 45
+
+    Usage (files):
+        uv run tt-strategy build-strategy short_put \\
+          --chain chain.json --greeks greeks.json --dte 45 --put-delta 0.30
+    """
+    if strategy not in _STRATEGIES:
+        typer.echo(json.dumps({"error": f"Unknown strategy '{strategy}'. Choose: {_STRATEGIES}"}))
+        raise typer.Exit(1)
+
+    # Load chain
+    if chain_file:
+        if not chain_file.exists():
+            typer.echo(json.dumps({"error": f"Chain file not found: {chain_file}"}))
+            raise typer.Exit(1)
+        chain_text = chain_file.read_text()
+    else:
+        chain_text = sys.stdin.read()
+
+    try:
+        chain_raw = json.loads(chain_text)
+    except json.JSONDecodeError as e:
+        typer.echo(json.dumps({"error": f"Invalid chain JSON: {e}"}))
+        raise typer.Exit(1)
+
+    # Load greeks (optional)
+    greeks_map = {}
+    if greeks_file:
+        if not greeks_file.exists():
+            typer.echo(json.dumps({"error": f"Greeks file not found: {greeks_file}"}))
+            raise typer.Exit(1)
+        try:
+            greeks_raw = json.loads(greeks_file.read_text())
+            greeks_map = parse_greeks_response(greeks_raw)
+        except json.JSONDecodeError as e:
+            typer.echo(json.dumps({"error": f"Invalid greeks JSON: {e}"}))
+            raise typer.Exit(1)
+
+    # Parse chain
+    contracts, expiration_date = parse_nested_chain(chain_raw, target_dte=dte, greeks_map=greeks_map)
+
+    if not contracts:
+        typer.echo(json.dumps({"error": "No contracts found in chain for the given DTE"}))
+        raise typer.Exit(1)
+
+    # Infer underlying from first contract
+    underlying = contracts[0].underlying if contracts else ""
+
+    try:
+        if strategy == "short_put":
+            result = build_short_put(
+                contracts, underlying, expiration_date or "",
+                target_delta=Decimal(str(put_delta)),
+                quantity=quantity,
+            )
+        elif strategy == "vertical_spread":
+            result = build_vertical_spread(
+                contracts, underlying, expiration_date or "",
+                option_type=OptionType.PUT,
+                direction=Direction.BULLISH,
+                short_delta=Decimal(str(put_delta)),
+                long_delta=Decimal(str(long_put_delta)),
+                quantity=quantity,
+            )
+        elif strategy == "iron_condor":
+            result = build_iron_condor(
+                contracts, underlying, expiration_date or "",
+                put_short_delta=Decimal(str(put_delta)),
+                put_long_delta=Decimal(str(long_put_delta)),
+                call_short_delta=Decimal(str(call_delta)),
+                call_long_delta=Decimal(str(long_call_delta)),
+                quantity=quantity,
+            )
+        elif strategy == "strangle":
+            result = build_strangle(
+                contracts, underlying, expiration_date or "",
+                put_delta=Decimal(str(put_delta)),
+                call_delta=Decimal(str(call_delta)),
+                quantity=quantity,
+            )
+
+        result["expiration_date_selected"] = expiration_date
+        result["dte_target"] = dte
+        result["greeks_available"] = bool(greeks_map)
+
+        typer.echo(json.dumps(result, indent=2))
+
+    except ChainBuilderError as e:
+        typer.echo(json.dumps({"error": str(e)}))
+        raise typer.Exit(1)
 
 
 # ---------------------------------------------------------------------------
