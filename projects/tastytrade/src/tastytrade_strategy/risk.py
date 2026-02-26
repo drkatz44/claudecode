@@ -137,7 +137,10 @@ def check_trade(
 
     # Check correlated positions
     if legs:
-        underlying = legs[0].symbol
+        raw_symbol = legs[0].symbol
+        # OCC option symbols pad the root to 6 chars with spaces (e.g. "SPY   240315P...").
+        # Extract just the root ticker for underlying comparison.
+        underlying = raw_symbol[:6].rstrip() if len(raw_symbol) > 10 else raw_symbol
         existing_count = sum(
             1 for p in portfolio.positions if p.underlying == underlying
         )
@@ -176,26 +179,62 @@ def portfolio_from_positions(
     positions_data: list[dict],
     balances_data: dict,
 ) -> PortfolioSnapshot:
-    """Build a PortfolioSnapshot from raw MCP response data.
+    """Build a PortfolioSnapshot from raw MCP/API response data.
+
+    Accepts the tastytrade API balance envelope or a flat dict.
+    Buying power priority: derivative-buying-power → equity-buying-power
+    → available-trading-funds → day-trading-buying-power.
 
     Args:
-        positions_data: List of position dicts from MCP get_positions.
-        balances_data: Balance dict from MCP get_balances.
+        positions_data: List of position dicts from MCP get_positions or
+            GET /accounts/{n}/positions response items.
+        balances_data: Balance dict from MCP get_balances or
+            GET /accounts/{n}/balances. May be wrapped in {"data": {...}}.
 
     Returns:
         PortfolioSnapshot ready for risk checks.
     """
+    # Unwrap API envelope if present
+    if "data" in balances_data and isinstance(balances_data["data"], dict):
+        balances_data = balances_data["data"]
+
     positions = []
     for p in positions_data:
+        qty_raw = p.get("quantity", 0)
+        # quantity-direction tells us long vs short; quantity is always positive
+        direction = p.get("quantity-direction", "Long")
+        qty = int(Decimal(str(qty_raw)))
+        if direction == "Short":
+            qty = -qty
+
+        mark_raw = p.get("mark", p.get("mark-price", p.get("close-price", 0)))
+        mark = Decimal(str(mark_raw))
+
         positions.append(PositionSummary(
             underlying=p.get("underlying-symbol", p.get("symbol", "")),
-            quantity=int(p.get("quantity", 0)),
-            mark=Decimal(str(p.get("mark", 0))),
-            notional=Decimal(str(p.get("mark", 0))) * int(p.get("quantity", 0)),
+            quantity=qty,
+            mark=mark,
+            notional=mark * abs(qty),
         ))
 
+    # Prefer derivative buying power for options; fall back through hierarchy
+    bp = Decimal("0")
+    for key in (
+        "derivative-buying-power",
+        "equity-buying-power",
+        "available-trading-funds",
+        "day-trading-buying-power",
+        "cash-available-to-withdraw",
+    ):
+        val = balances_data.get(key)
+        if val is not None:
+            bp = Decimal(str(val))
+            break
+
     return PortfolioSnapshot(
-        net_liquidating_value=Decimal(str(balances_data.get("net-liquidating-value", 0))),
-        buying_power=Decimal(str(balances_data.get("derivative-buying-power", 0))),
+        net_liquidating_value=Decimal(str(
+            balances_data.get("net-liquidating-value", 0)
+        )),
+        buying_power=bp,
         positions=positions,
     )

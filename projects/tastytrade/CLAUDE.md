@@ -179,6 +179,62 @@ Output shape:
 }
 ```
 
+## Risk Check Agent
+
+Pipe `build-strategy` output directly into the risk check. Returns pass/fail with full detail.
+
+```
+subagent_type: "general-purpose"
+model: "haiku"
+prompt: |
+  You are a tastytrade risk-check agent. Your job:
+  1. Call MCP get_positions(account_number=<ACCOUNT>) via tasty-agent
+  2. Call MCP get_balances(account_number=<ACCOUNT>) via tasty-agent
+  3. Save combined response to /tmp/portfolio.json:
+       {"positions": <positions_items>, "balances": <balances_data>}
+  4. Run the risk check (piping the strategy JSON):
+       echo '<STRATEGY_JSON>' | \
+         uv run -C /Users/drk/Code/claudecode/projects/tastytrade \
+           tt-strategy risk-agent /tmp/portfolio.json \
+           [--max-position-pct <PCT>] \
+           [--max-bp-pct <PCT>] \
+           [--min-dte <DAYS>] \
+           [--max-correlated <N>]
+  5. Return the JSON output exactly as-is.
+
+  Inputs:
+  - account_number: <ACCOUNT>
+  - strategy_json: <STRATEGY_JSON>   # output from build-strategy agent
+  - max_position_pct: 0.05           # optional, fraction of NLV
+  - max_bp_pct: 0.50                 # optional, fraction of buying power
+  - min_dte: 7                       # optional
+  - max_correlated: 3                # optional, max positions per underlying
+
+  Return only the JSON output. No commentary.
+```
+
+Output shape:
+```json
+{
+  "approved": true,
+  "violations": [],
+  "warnings": ["Position risk 4.2% approaching limit of 5.0%"],
+  "summary": "APPROVED — SPY Iron Condor 2024-04-19",
+  "strategy": { "type": "iron_condor", "underlying": "SPY", "max_loss": 315.0, ... },
+  "portfolio": { "nlv": 100000.0, "buying_power": 50000.0, "open_positions": 3 },
+  "checks": {
+    "position_size_pct": 0.0315,
+    "position_size_limit": 0.05,
+    "bp_usage_after": 0.123,
+    "bp_usage_limit": 0.5,
+    "dte": 45,
+    "dte_min": 7,
+    "correlated_positions": 1,
+    "correlated_limit": 3
+  }
+}
+```
+
 ## Roadmap
 
 Potential next areas (in no particular order):

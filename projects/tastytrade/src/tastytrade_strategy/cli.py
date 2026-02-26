@@ -20,7 +20,7 @@ from .chain_parser import parse_greeks_response, parse_nested_chain
 from .journal import Journal
 from .mcp_parser import parse_market_metrics_response
 from .models import Direction, MarketMetrics, OptionType, OrderLeg, RiskProfile
-from .risk import check_trade, portfolio_from_positions
+from .risk import RiskRules, check_trade, portfolio_from_positions
 from .screener import ScreenCriteria, screen
 
 app = typer.Typer(name="tt-strategy", help="Tastytrade options strategy tools")
@@ -348,6 +348,174 @@ def build_strategy(
     except ChainBuilderError as e:
         typer.echo(json.dumps({"error": str(e)}))
         raise typer.Exit(1)
+
+
+# ---------------------------------------------------------------------------
+# Risk agent command (JSON output for Claude Task subagents)
+# ---------------------------------------------------------------------------
+
+@app.command()
+def risk_agent(
+    portfolio_file: Path = typer.Argument(..., help="JSON file with MCP positions+balances response"),
+    strategy_file: Path | None = typer.Option(None, "--strategy", "-s", help="build-strategy JSON (default: stdin)"),
+    max_position_pct: float = typer.Option(0.05, "--max-position-pct", help="Max loss as fraction of NLV"),
+    max_bp_pct: float = typer.Option(0.50, "--max-bp-pct", help="Max buying power usage fraction"),
+    min_dte: int = typer.Option(7, "--min-dte", help="Minimum days to expiration"),
+    max_correlated: int = typer.Option(3, "--max-correlated", help="Max positions per underlying"),
+):
+    """Run risk checks on a proposed strategy. Outputs compact JSON.
+
+    Reads portfolio (positions + balances) from --portfolio file.
+    Reads strategy from --strategy file or stdin (build-strategy output).
+    Designed for agent use — outputs machine-readable JSON.
+
+    Usage:
+        uv run tt-strategy build-strategy iron_condor ... | \\
+          uv run tt-strategy risk-agent portfolio.json
+
+    Usage (files):
+        uv run tt-strategy risk-agent portfolio.json --strategy strategy.json
+    """
+    # Load portfolio
+    if not portfolio_file.exists():
+        typer.echo(json.dumps({"error": f"Portfolio file not found: {portfolio_file}"}))
+        raise typer.Exit(1)
+
+    try:
+        portfolio_raw = json.loads(portfolio_file.read_text())
+    except json.JSONDecodeError as e:
+        typer.echo(json.dumps({"error": f"Invalid portfolio JSON: {e}"}))
+        raise typer.Exit(1)
+
+    # Unwrap API envelope: {"data": {"items": [...]}} or {"data": {...}}
+    positions_raw: list[dict] = []
+    balances_raw: dict = {}
+
+    if "positions" in portfolio_raw and "balances" in portfolio_raw:
+        # Simple combined format: {"positions": [...], "balances": {...}}
+        positions_raw = portfolio_raw["positions"]
+        balances_raw = portfolio_raw["balances"]
+    elif "data" in portfolio_raw:
+        data = portfolio_raw["data"]
+        if isinstance(data, list):
+            positions_raw = data
+        elif isinstance(data, dict) and "items" in data:
+            positions_raw = data["items"]
+        else:
+            balances_raw = data
+    else:
+        positions_raw = portfolio_raw if isinstance(portfolio_raw, list) else []
+
+    # Load strategy
+    if strategy_file:
+        if not strategy_file.exists():
+            typer.echo(json.dumps({"error": f"Strategy file not found: {strategy_file}"}))
+            raise typer.Exit(1)
+        strategy_text = strategy_file.read_text()
+    else:
+        strategy_text = sys.stdin.read()
+
+    try:
+        strategy_raw = json.loads(strategy_text)
+    except json.JSONDecodeError as e:
+        typer.echo(json.dumps({"error": f"Invalid strategy JSON: {e}"}))
+        raise typer.Exit(1)
+
+    # Build portfolio snapshot
+    portfolio = portfolio_from_positions(positions_raw, balances_raw)
+
+    # Extract risk profile and legs from build-strategy output
+    risk_data = strategy_raw.get("risk", {})
+    legs_data = strategy_raw.get("legs", [])
+    underlying = strategy_raw.get("underlying", "")
+    strategy_type = strategy_raw.get("strategy_type", "unknown")
+    expiration_date = strategy_raw.get("expiration_date", "")
+
+    risk_profile = RiskProfile(
+        max_profit=Decimal(str(risk_data.get("max_profit", 0))),
+        max_loss=Decimal(str(risk_data.get("max_loss", 0))),
+        breakevens=[Decimal(str(b)) for b in risk_data.get("breakevens", [])],
+    )
+
+    legs = [
+        OrderLeg(
+            symbol=leg.get("symbol", underlying),
+            action=leg.get("action", "Sell to Open"),
+            quantity=int(leg.get("quantity", 1)),
+            option_type=leg.get("option_type"),
+            strike_price=leg.get("strike_price"),
+            expiration_date=leg.get("expiration_date", expiration_date),
+        )
+        for leg in legs_data
+    ]
+
+    rules = RiskRules(
+        max_position_pct=Decimal(str(max_position_pct)),
+        max_bp_usage_pct=Decimal(str(max_bp_pct)),
+        min_dte=min_dte,
+        max_correlated_positions=max_correlated,
+    )
+
+    result = check_trade(risk_profile, legs, portfolio, rules)
+
+    # Build detail checks dict
+    position_pct = (
+        float(risk_profile.max_loss / portfolio.net_liquidating_value)
+        if portfolio.net_liquidating_value > 0 else None
+    )
+    bp_usage = (
+        float(1 - (portfolio.buying_power - risk_profile.max_loss) / portfolio.buying_power)
+        if portfolio.buying_power > 0 else None
+    )
+    correlated = sum(1 for p in portfolio.positions if p.underlying == underlying)
+
+    # DTE from first option leg
+    dte_value: int | None = None
+    from datetime import date as _date, datetime as _datetime
+    for leg in legs:
+        if leg.expiration_date:
+            try:
+                exp = _datetime.strptime(leg.expiration_date, "%Y-%m-%d").date()
+                dte_value = (exp - _date.today()).days
+                break
+            except ValueError:
+                pass
+
+    output = {
+        "approved": result.approved,
+        "violations": result.violations,
+        "warnings": result.warnings,
+        "summary": (
+            f"{'APPROVED' if result.approved else 'REJECTED'} — "
+            f"{underlying} {strategy_type.replace('_', ' ').title()}"
+            + (f" {expiration_date}" if expiration_date else "")
+        ),
+        "strategy": {
+            "type": strategy_type,
+            "underlying": underlying,
+            "expiration_date": expiration_date,
+            "max_profit": float(risk_profile.max_profit),
+            "max_loss": float(risk_profile.max_loss),
+            "risk_reward_ratio": float(risk_profile.risk_reward_ratio) if risk_profile.risk_reward_ratio else None,
+        },
+        "portfolio": {
+            "nlv": float(portfolio.net_liquidating_value),
+            "buying_power": float(portfolio.buying_power),
+            "open_positions": len(portfolio.positions),
+        },
+        "checks": {
+            "position_size_pct": round(position_pct, 4) if position_pct is not None else None,
+            "position_size_limit": max_position_pct,
+            "bp_usage_after": round(bp_usage, 4) if bp_usage is not None else None,
+            "bp_usage_limit": max_bp_pct,
+            "dte": dte_value,
+            "dte_min": min_dte,
+            "correlated_positions": correlated,
+            "correlated_limit": max_correlated,
+        },
+    }
+
+    typer.echo(json.dumps(output, indent=2))
 
 
 # ---------------------------------------------------------------------------
