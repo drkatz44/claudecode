@@ -173,6 +173,95 @@ class Journal:
             "avg_pnl": total / count if count > 0 else Decimal("0"),
         }
 
+    def rich_stats(self) -> dict:
+        """Extended analytics for closed trades: by-strategy, by-underlying, extremes.
+
+        Returns a dict suitable for JSON serialisation (all Decimals converted to float).
+        """
+        with self._connect() as conn:
+            rows = conn.execute(
+                """SELECT strategy_type, underlying, pnl, entry_price, exit_price,
+                          timestamp
+                   FROM trades
+                   WHERE status = 'closed' AND pnl IS NOT NULL"""
+            ).fetchall()
+
+        open_rows = self._count_open()
+
+        if not rows:
+            return {
+                "open_trades": open_rows,
+                "closed_trades": 0,
+                "total_pnl": 0.0,
+                "winners": 0,
+                "losers": 0,
+                "breakeven": 0,
+                "win_rate": 0.0,
+                "avg_pnl": 0.0,
+                "max_win": 0.0,
+                "max_loss": 0.0,
+                "by_strategy": {},
+                "by_underlying": {},
+            }
+
+        pnls = [float(r[2]) for r in rows]
+        winners = sum(1 for p in pnls if p > 0)
+        losers = sum(1 for p in pnls if p < 0)
+        breakeven = len(pnls) - winners - losers
+        count = len(pnls)
+        total = sum(pnls)
+
+        # By-strategy breakdown
+        by_strategy: dict[str, dict] = {}
+        for row in rows:
+            strat = row[0]
+            pnl = float(row[2])
+            if strat not in by_strategy:
+                by_strategy[strat] = {"trades": 0, "total_pnl": 0.0, "winners": 0}
+            by_strategy[strat]["trades"] += 1
+            by_strategy[strat]["total_pnl"] = round(by_strategy[strat]["total_pnl"] + pnl, 2)
+            if pnl > 0:
+                by_strategy[strat]["winners"] += 1
+        for v in by_strategy.values():
+            v["win_rate"] = round(v["winners"] / v["trades"], 3) if v["trades"] else 0.0
+            v["avg_pnl"] = round(v["total_pnl"] / v["trades"], 2) if v["trades"] else 0.0
+
+        # By-underlying breakdown
+        by_underlying: dict[str, dict] = {}
+        for row in rows:
+            sym = row[1]
+            pnl = float(row[2])
+            if sym not in by_underlying:
+                by_underlying[sym] = {"trades": 0, "total_pnl": 0.0, "winners": 0}
+            by_underlying[sym]["trades"] += 1
+            by_underlying[sym]["total_pnl"] = round(by_underlying[sym]["total_pnl"] + pnl, 2)
+            if pnl > 0:
+                by_underlying[sym]["winners"] += 1
+        for v in by_underlying.values():
+            v["win_rate"] = round(v["winners"] / v["trades"], 3) if v["trades"] else 0.0
+
+        return {
+            "open_trades": open_rows,
+            "closed_trades": count,
+            "total_pnl": round(total, 2),
+            "winners": winners,
+            "losers": losers,
+            "breakeven": breakeven,
+            "win_rate": round(winners / count, 3) if count else 0.0,
+            "avg_pnl": round(total / count, 2) if count else 0.0,
+            "max_win": max(pnls),
+            "max_loss": min(pnls),
+            "by_strategy": by_strategy,
+            "by_underlying": by_underlying,
+        }
+
+    def _count_open(self) -> int:
+        with self._connect() as conn:
+            row = conn.execute(
+                "SELECT COUNT(*) FROM trades WHERE status = 'open'"
+            ).fetchone()
+        return row[0] if row else 0
+
     def _get_by_id(self, trade_id: int) -> JournalEntry | None:
         with self._connect() as conn:
             row = conn.execute(

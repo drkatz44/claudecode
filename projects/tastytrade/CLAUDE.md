@@ -63,12 +63,13 @@ uv run tt-strategy risk-check portfolio.json --max-loss 3000 --max-profit 1500
 - Strategy construction (spreads, iron condors, strangles)
 - Screener with IV rank filtering
 - Risk validation against portfolio rules
-- Trade journal (SQLite)
-- Full test coverage (70 tests)
+- Trade journal (SQLite, with rich analytics)
+- Full test coverage (135 tests)
 
 ### Integration
 - Works with market-agent for signal generation
 - Claude orchestrates MCP calls to tasty-agent
+- Journal agent: log trades, query stats, close positions (all JSON output)
 
 ## Screener Agent
 
@@ -235,13 +236,88 @@ Output shape:
 }
 ```
 
+## Journal Agent
+
+Two commands for machine-readable journal access:
+
+### journal-log — Record a trade
+
+```
+subagent_type: "general-purpose"
+model: "haiku"
+prompt: |
+  You are a tastytrade journal-log agent. Your job:
+  1. Save the build-strategy JSON to /tmp/strategy.json
+  2. Run:
+       uv run -C /Users/drk/Code/claudecode/projects/tastytrade \
+         tt-strategy journal-log \
+         --credit <CREDIT> \
+         --strategy /tmp/strategy.json \
+         [--rationale "<RATIONALE>"] \
+         [--profit-target <PROFIT_TARGET>] \
+         [--stop-loss <STOP_LOSS>]
+  3. Return the JSON output exactly as-is.
+
+  Inputs:
+  - strategy_json: <STRATEGY_JSON>   # output from build-strategy agent
+  - credit: <CREDIT>                 # net credit received (positive) or debit paid (negative)
+  - rationale: <RATIONALE>           # optional trade thesis
+  - profit_target: <PROFIT_TARGET>   # optional, in same units as credit
+  - stop_loss: <STOP_LOSS>           # optional, in same units as credit
+
+  Return only the JSON output. No commentary.
+```
+
+Output shape:
+```json
+{
+  "logged": true,
+  "trade_id": 42,
+  "underlying": "SPY",
+  "strategy_type": "iron_condor",
+  "entry_price": 1.85,
+  "rationale": "High IV, neutral outlook",
+  "timestamp": "2026-02-26T10:30:00",
+  "legs": 4
+}
+```
+
+### journal-query — Query/close trades
+
+```
+subagent_type: "general-purpose"
+model: "haiku"
+prompt: |
+  You are a tastytrade journal-query agent. Your job:
+  Run:
+    uv run -C /Users/drk/Code/claudecode/projects/tastytrade \
+      tt-strategy journal-query <ACTION> \
+      [--id <TRADE_ID>] \
+      [--exit-price <EXIT_PRICE>] \
+      [--pnl <PNL>] \
+      [--underlying <UNDERLYING>] \
+      [--limit <LIMIT>]
+
+  Actions:
+    open     — list all open trades
+    stats    — full analytics (win rate, P&L, by-strategy, by-underlying breakdown)
+    history  — recent trades (--underlying to filter, --limit N)
+    close    — close a trade (--id, --exit-price required; --pnl optional)
+
+  Return only the JSON output. No commentary.
+```
+
+Output shapes:
+- `open` / `history`: `{"count": N, "trades": [...]}`
+- `stats`: `{"open_trades", "closed_trades", "total_pnl", "winners", "losers", "win_rate", "avg_pnl", "max_win", "max_loss", "by_strategy": {...}, "by_underlying": {...}}`
+- `close`: `{"closed": true, "trade_id": N, "underlying", "entry_price", "exit_price", "pnl", "status"}`
+
 ## Roadmap
 
 Potential next areas (in no particular order):
 - **market-agent integration** — wire signal pipeline so screener outputs feed directly into strategy construction
 - **new strategy types** — calendar spreads, butterflies, ratio spreads, LEAPS
 - **live trading orchestration loop** — screen → construct → risk check → dry-run → review → submit
-- **journaling enhancements** — P&L tracking, trade analytics, win rate, expected value reporting
 - **backtesting** — use tastytrade backtesting API (`backtester.vast.tastyworks.com`) to test strategies historically
 - **account streaming** — real-time order/fill/position updates via account WebSocket
 - **market data streaming** — DXLink WebSocket for live greeks, quotes, candles

@@ -102,6 +102,189 @@ def journal_close(
 
 
 # ---------------------------------------------------------------------------
+# Journal agent commands (JSON output for Claude Task subagents)
+# ---------------------------------------------------------------------------
+
+@app.command()
+def journal_log(
+    credit: float = typer.Option(..., "--credit", "-c", help="Credit received (positive) or debit paid"),
+    rationale: str = typer.Option("", "--rationale", "-r", help="Trade rationale"),
+    profit_target: float | None = typer.Option(None, "--profit-target", help="Profit target price"),
+    stop_loss: float | None = typer.Option(None, "--stop-loss", help="Stop loss price"),
+    strategy_file: Path | None = typer.Option(None, "--strategy", "-s", help="build-strategy JSON (default: stdin)"),
+):
+    """Log a new trade from build-strategy output. Outputs JSON with trade ID.
+
+    Reads strategy JSON from --strategy file or stdin.
+    Designed for agent use — outputs machine-readable JSON.
+
+    Usage (pipe from build-strategy):
+        uv run tt-strategy build-strategy iron_condor ... | \\
+          uv run tt-strategy journal-log --credit 1.85 --rationale "High IV, neutral"
+
+    Usage (file):
+        uv run tt-strategy journal-log --strategy strategy.json --credit 1.85
+    """
+    if strategy_file:
+        if not strategy_file.exists():
+            typer.echo(json.dumps({"error": f"Strategy file not found: {strategy_file}"}))
+            raise typer.Exit(1)
+        strategy_text = strategy_file.read_text()
+    else:
+        strategy_text = sys.stdin.read()
+
+    try:
+        s = json.loads(strategy_text)
+    except json.JSONDecodeError as e:
+        typer.echo(json.dumps({"error": f"Invalid strategy JSON: {e}"}))
+        raise typer.Exit(1)
+
+    # Map strategy_type string to StrategyType enum
+    from .models import StrategyType as ST
+    strategy_type_map = {v.value: v for v in ST}
+    raw_type = s.get("strategy_type", "")
+    strategy_type = strategy_type_map.get(raw_type)
+    if strategy_type is None:
+        typer.echo(json.dumps({"error": f"Unknown strategy_type '{raw_type}'. Valid: {list(strategy_type_map)}"}))
+        raise typer.Exit(1)
+
+    legs = [
+        OrderLeg(
+            symbol=leg.get("symbol", s.get("underlying", "")),
+            action=leg.get("action", "Sell to Open"),
+            quantity=int(leg.get("quantity", 1)),
+            option_type=leg.get("option_type"),
+            strike_price=leg.get("strike_price"),
+            expiration_date=leg.get("expiration_date", s.get("expiration_date")),
+        )
+        for leg in s.get("legs", [])
+    ]
+
+    from .journal import Journal, JournalEntry
+    entry = JournalEntry(
+        underlying=s.get("underlying", ""),
+        strategy_type=strategy_type,
+        legs=legs,
+        entry_price=Decimal(str(credit)),
+        rationale=rationale,
+        profit_target=Decimal(str(profit_target)) if profit_target is not None else None,
+        stop_loss=Decimal(str(stop_loss)) if stop_loss is not None else None,
+    )
+
+    journal = Journal()
+    logged = journal.log_trade(entry)
+
+    typer.echo(json.dumps({
+        "logged": True,
+        "trade_id": logged.id,
+        "underlying": logged.underlying,
+        "strategy_type": logged.strategy_type.value,
+        "entry_price": float(logged.entry_price),
+        "rationale": logged.rationale,
+        "timestamp": logged.timestamp,
+        "legs": len(logged.legs),
+    }))
+
+
+@app.command()
+def journal_query(
+    action: str = typer.Argument(..., help="Action: open | stats | history | close"),
+    trade_id: int | None = typer.Option(None, "--id", help="Trade ID (for close)"),
+    exit_price: float | None = typer.Option(None, "--exit-price", help="Exit price (for close)"),
+    pnl: float | None = typer.Option(None, "--pnl", help="Realized P&L (for close)"),
+    underlying: str | None = typer.Option(None, "--underlying", "-u", help="Filter by underlying (history)"),
+    limit: int = typer.Option(20, "--limit", "-n", help="Result limit (history)"),
+):
+    """Query the trade journal. Outputs JSON.
+
+    Actions:
+      open     — list all open trades
+      stats    — full analytics (win rate, P&L, by-strategy, by-underlying)
+      history  — recent closed trades (--underlying to filter, --limit N)
+      close    — close a trade (--id, --exit-price, --pnl required)
+
+    Usage:
+        uv run tt-strategy journal-query open
+        uv run tt-strategy journal-query stats
+        uv run tt-strategy journal-query history --underlying SPY --limit 10
+        uv run tt-strategy journal-query close --id 42 --exit-price 0.65 --pnl 120
+    """
+    from .journal import Journal
+    journal = Journal()
+
+    if action == "open":
+        trades = journal.get_open_trades()
+        typer.echo(json.dumps({
+            "count": len(trades),
+            "trades": [
+                {
+                    "id": t.id,
+                    "underlying": t.underlying,
+                    "strategy_type": t.strategy_type.value,
+                    "entry_price": float(t.entry_price),
+                    "profit_target": float(t.profit_target) if t.profit_target else None,
+                    "stop_loss": float(t.stop_loss) if t.stop_loss else None,
+                    "rationale": t.rationale,
+                    "timestamp": t.timestamp,
+                    "legs": len(t.legs),
+                    "expiration_date": t.legs[0].expiration_date if t.legs else None,
+                }
+                for t in trades
+            ],
+        }, indent=2))
+
+    elif action == "stats":
+        stats = journal.rich_stats()
+        typer.echo(json.dumps(stats, indent=2))
+
+    elif action == "history":
+        trades = journal.get_history(underlying=underlying, limit=limit)
+        typer.echo(json.dumps({
+            "count": len(trades),
+            "trades": [
+                {
+                    "id": t.id,
+                    "underlying": t.underlying,
+                    "strategy_type": t.strategy_type.value,
+                    "entry_price": float(t.entry_price),
+                    "exit_price": float(t.exit_price) if t.exit_price else None,
+                    "pnl": float(t.pnl) if t.pnl else None,
+                    "status": t.status.value,
+                    "timestamp": t.timestamp,
+                }
+                for t in trades
+            ],
+        }, indent=2))
+
+    elif action == "close":
+        if trade_id is None or exit_price is None:
+            typer.echo(json.dumps({"error": "close requires --id and --exit-price"}))
+            raise typer.Exit(1)
+        closed = journal.close_trade(
+            trade_id,
+            exit_price=Decimal(str(exit_price)),
+            pnl=Decimal(str(pnl)) if pnl is not None else None,
+        )
+        if closed is None:
+            typer.echo(json.dumps({"error": f"Trade {trade_id} not found or already closed"}))
+            raise typer.Exit(1)
+        typer.echo(json.dumps({
+            "closed": True,
+            "trade_id": closed.id,
+            "underlying": closed.underlying,
+            "strategy_type": closed.strategy_type.value,
+            "entry_price": float(closed.entry_price),
+            "exit_price": float(closed.exit_price) if closed.exit_price else None,
+            "pnl": float(closed.pnl) if closed.pnl else None,
+            "status": closed.status.value,
+        }))
+
+    else:
+        typer.echo(json.dumps({"error": f"Unknown action '{action}'. Use: open | stats | history | close"}))
+        raise typer.Exit(1)
+
+
+# ---------------------------------------------------------------------------
 # Screen command
 # ---------------------------------------------------------------------------
 
