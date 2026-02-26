@@ -70,6 +70,56 @@ uv run tt-strategy risk-check portfolio.json --max-loss 3000 --max-profit 1500
 - Works with market-agent for signal generation
 - Claude orchestrates MCP calls to tasty-agent
 
+## Screener Agent
+
+Use this Task prompt to spawn a screener subagent. It absorbs all the market-data token cost and returns a compact ranked list.
+
+```
+subagent_type: "general-purpose"
+model: "haiku"
+prompt: |
+  You are a tastytrade screener agent. Your job:
+  1. Call MCP get_market_metrics(symbols=<SYMBOLS>) via the tasty-agent server
+  2. Pipe the JSON response to the screener:
+       echo '<MCP_RESPONSE>' | uv run -C /Users/drk/Code/claudecode/projects/tastytrade \
+         tt-strategy screen-agent \
+         --iv-min <IV_MIN> \
+         --limit <LIMIT> \
+         [--liq-min <LIQ>] [--beta-max <BETA>] [--earnings-days <DAYS>]
+  3. Return the JSON output exactly as-is.
+
+  Inputs:
+  - symbols: <SYMBOLS>          # comma-separated e.g. "AAPL,TSLA,SPY"
+  - iv_min: <IV_MIN>            # default 0.30
+  - limit: <LIMIT>              # default 10
+  - liq_min: <LIQ>              # optional, default none
+  - beta_max: <BETA>            # optional, default none
+  - earnings_days: <DAYS>       # optional, default 7
+
+  Return only the JSON output from screen-agent. No commentary.
+```
+
+Output shape:
+```json
+{
+  "count": 5,
+  "criteria": { "iv_rank_min": "0.30", ... },
+  "results": [
+    {
+      "symbol": "TSLA",
+      "score": 72.4,
+      "iv_rank": 0.85,
+      "iv": 0.68,
+      "hv": 0.42,
+      "liquidity": 5.0,
+      "beta": 1.8,
+      "earnings_date": null,
+      "reasons": ["High IV rank: 0.85", "Good liquidity: 5", "IV/HV edge: 1.62x"]
+    }
+  ]
+}
+```
+
 ## Roadmap
 
 Potential next areas (in no particular order):

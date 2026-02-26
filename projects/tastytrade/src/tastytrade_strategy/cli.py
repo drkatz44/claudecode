@@ -7,6 +7,7 @@ journal management, screening, and risk checking.
 from __future__ import annotations
 
 import json
+import sys
 from decimal import Decimal
 from pathlib import Path
 
@@ -15,6 +16,7 @@ from rich.console import Console
 from rich.table import Table
 
 from .journal import Journal
+from .mcp_parser import parse_market_metrics_response
 from .models import MarketMetrics, OrderLeg, RiskProfile
 from .risk import check_trade, portfolio_from_positions
 from .screener import ScreenCriteria, screen
@@ -144,6 +146,89 @@ def screen_cmd(
             "; ".join(r.reasons) if r.reasons else "",
         )
     console.print(table)
+
+
+# ---------------------------------------------------------------------------
+# Screen agent command (JSON output for Claude Task subagents)
+# ---------------------------------------------------------------------------
+
+@app.command()
+def screen_agent(
+    iv_rank_min: float = typer.Option(0.30, "--iv-min", help="Min IV rank (0-1)"),
+    iv_rank_max: float = typer.Option(1.0, "--iv-max", help="Max IV rank (0-1)"),
+    liquidity_min: float | None = typer.Option(None, "--liq-min", help="Min liquidity rating"),
+    earnings_days: int = typer.Option(7, "--earnings-days", help="Exclude symbols with earnings within N days"),
+    beta_max: float | None = typer.Option(None, "--beta-max", help="Max absolute beta"),
+    limit: int = typer.Option(10, "--limit", "-n", help="Max results to return"),
+    input_file: Path | None = typer.Option(None, "--input", "-i", help="JSON file (default: stdin)"),
+):
+    """Screen symbols from raw tastytrade market-metrics JSON. Outputs compact JSON.
+
+    Reads raw MCP/API response from stdin or --input file. Designed for use
+    as a Claude Task subagent — outputs machine-readable JSON, not a table.
+
+    Usage (pipe MCP response):
+        echo '<mcp_response>' | uv run tt-strategy screen-agent --iv-min 0.40
+
+    Usage (file):
+        uv run tt-strategy screen-agent --input metrics.json --limit 5
+    """
+    if input_file:
+        if not input_file.exists():
+            typer.echo(json.dumps({"error": f"File not found: {input_file}"}))
+            raise typer.Exit(1)
+        raw_text = input_file.read_text()
+    else:
+        raw_text = sys.stdin.read()
+
+    try:
+        raw = json.loads(raw_text)
+    except json.JSONDecodeError as e:
+        typer.echo(json.dumps({"error": f"Invalid JSON: {e}"}))
+        raise typer.Exit(1)
+
+    metrics_list = parse_market_metrics_response(raw)
+
+    if not metrics_list:
+        typer.echo(json.dumps({"error": "No market metrics found in input"}))
+        raise typer.Exit(1)
+
+    criteria = ScreenCriteria(
+        iv_rank_min=Decimal(str(iv_rank_min)),
+        iv_rank_max=Decimal(str(iv_rank_max)),
+        liquidity_min=Decimal(str(liquidity_min)) if liquidity_min is not None else None,
+        earnings_exclusion_days=earnings_days,
+        beta_max=Decimal(str(beta_max)) if beta_max is not None else None,
+    )
+
+    results = screen(metrics_list, criteria)[:limit]
+
+    output = {
+        "count": len(results),
+        "criteria": {
+            "iv_rank_min": str(criteria.iv_rank_min),
+            "iv_rank_max": str(criteria.iv_rank_max),
+            "liquidity_min": str(criteria.liquidity_min) if criteria.liquidity_min else None,
+            "earnings_exclusion_days": criteria.earnings_exclusion_days,
+            "beta_max": str(criteria.beta_max) if criteria.beta_max else None,
+        },
+        "results": [
+            {
+                "symbol": r.symbol,
+                "score": float(r.score),
+                "iv_rank": float(r.metrics.iv_rank),
+                "iv": float(r.metrics.implied_volatility) if r.metrics.implied_volatility else None,
+                "hv": float(r.metrics.historical_volatility) if r.metrics.historical_volatility else None,
+                "liquidity": float(r.metrics.liquidity_rating) if r.metrics.liquidity_rating else None,
+                "beta": float(r.metrics.beta) if r.metrics.beta else None,
+                "earnings_date": r.metrics.earnings_date,
+                "reasons": r.reasons,
+            }
+            for r in results
+        ],
+    }
+
+    typer.echo(json.dumps(output, indent=2))
 
 
 # ---------------------------------------------------------------------------
