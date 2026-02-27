@@ -756,5 +756,278 @@ def risk_check(
             console.print(f"  - {w}")
 
 
+# ---------------------------------------------------------------------------
+# Pipeline command — chains screen → build → risk-check → journal
+# ---------------------------------------------------------------------------
+
+def _load_portfolio_from_file(portfolio_file: Path) -> tuple[list[dict], dict]:
+    """Load and parse a portfolio JSON file into (positions, balances)."""
+    portfolio_raw = json.loads(portfolio_file.read_text())
+    positions_raw: list[dict] = []
+    balances_raw: dict = {}
+
+    if "positions" in portfolio_raw and "balances" in portfolio_raw:
+        positions_raw = portfolio_raw["positions"]
+        balances_raw = portfolio_raw["balances"]
+    elif "data" in portfolio_raw:
+        data = portfolio_raw["data"]
+        if isinstance(data, list):
+            positions_raw = data
+        elif isinstance(data, dict) and "items" in data:
+            positions_raw = data["items"]
+        else:
+            balances_raw = data
+    else:
+        positions_raw = portfolio_raw if isinstance(portfolio_raw, list) else []
+
+    return positions_raw, balances_raw
+
+
+def _journal_from_strategy(strategy_dict: dict, credit: float, rationale: str) -> "JournalEntry | None":
+    """Build a JournalEntry from a build-strategy dict, or return None on failure."""
+    from .models import StrategyType as ST
+    from .journal import JournalEntry
+
+    strategy_type_map = {v.value: v for v in ST}
+    raw_type = strategy_dict.get("strategy_type", "")
+    strategy_type = strategy_type_map.get(raw_type)
+    if strategy_type is None:
+        return None
+
+    underlying = strategy_dict.get("underlying", "")
+    expiration_date = strategy_dict.get("expiration_date", "")
+    legs = [
+        OrderLeg(
+            symbol=leg.get("symbol", underlying),
+            action=leg.get("action", "Sell to Open"),
+            quantity=int(leg.get("quantity", 1)),
+            option_type=leg.get("option_type"),
+            strike_price=leg.get("strike_price"),
+            expiration_date=leg.get("expiration_date", expiration_date),
+        )
+        for leg in strategy_dict.get("legs", [])
+    ]
+
+    return JournalEntry(
+        underlying=underlying,
+        strategy_type=strategy_type,
+        legs=legs,
+        entry_price=Decimal(str(credit)),
+        rationale=rationale,
+    )
+
+
+@app.command()
+def pipeline(
+    metrics_file: Path = typer.Option(..., "--metrics", help="JSON from MCP get_market_metrics"),
+    portfolio_file: Path = typer.Option(..., "--portfolio", help="JSON from MCP get_positions + get_balances"),
+    chains_dir: Path | None = typer.Option(None, "--chains-dir", help="Dir containing {SYMBOL}.json chain files"),
+    greeks_dir: Path | None = typer.Option(None, "--greeks-dir", help="Dir containing {SYMBOL}_greeks.json files"),
+    strategy: str = typer.Option("iron_condor", "--strategy", help="Strategy type: short_put | vertical_spread | iron_condor | strangle"),
+    dte: int = typer.Option(45, "--dte", help="Target days to expiration"),
+    put_delta: float = typer.Option(0.30, "--put-delta", help="Short put delta (absolute)"),
+    call_delta: float = typer.Option(0.30, "--call-delta", help="Short call delta (absolute)"),
+    long_put_delta: float = typer.Option(0.16, "--long-put-delta", help="Long put wing delta"),
+    long_call_delta: float = typer.Option(0.16, "--long-call-delta", help="Long call wing delta"),
+    iv_min: float = typer.Option(0.30, "--iv-min", help="Min IV rank for screening (0-1)"),
+    limit: int = typer.Option(5, "--limit", "-n", help="Max symbols to build strategies for"),
+    auto_journal: bool = typer.Option(False, "--auto-journal", help="Log all approved trades to journal"),
+    rationale: str = typer.Option("", "--rationale", help="Rationale string stored in journal entries"),
+    max_position_pct: float = typer.Option(0.05, "--max-position-pct", help="Max loss as fraction of NLV"),
+    max_bp_pct: float = typer.Option(0.50, "--max-bp-pct", help="Max buying power usage fraction"),
+    min_dte_risk: int = typer.Option(7, "--min-dte", help="Minimum days to expiration for risk check"),
+):
+    """Run full pipeline: screen → build → risk-check → (journal). Outputs JSON.
+
+    Chains the four agents programmatically from pre-fetched data files.
+    Each symbol in the metrics file is screened, then a strategy is built
+    from its chain file (if present), risk-checked against the portfolio,
+    and optionally journaled if approved.
+
+    Usage:
+        uv run tt-strategy pipeline \\
+          --metrics metrics.json --portfolio portfolio.json \\
+          --chains-dir /tmp/chains/ --strategy iron_condor --auto-journal
+    """
+    # --- Validate inputs ---
+    if not metrics_file.exists():
+        typer.echo(json.dumps({"error": f"Metrics file not found: {metrics_file}"}))
+        raise typer.Exit(1)
+    if not portfolio_file.exists():
+        typer.echo(json.dumps({"error": f"Portfolio file not found: {portfolio_file}"}))
+        raise typer.Exit(1)
+    if strategy not in _STRATEGIES:
+        typer.echo(json.dumps({"error": f"Unknown strategy '{strategy}'. Choose: {_STRATEGIES}"}))
+        raise typer.Exit(1)
+
+    # --- Load metrics + screen ---
+    try:
+        metrics_raw = json.loads(metrics_file.read_text())
+    except json.JSONDecodeError as e:
+        typer.echo(json.dumps({"error": f"Invalid metrics JSON: {e}"}))
+        raise typer.Exit(1)
+
+    metrics_list = parse_market_metrics_response(metrics_raw)
+    criteria = ScreenCriteria(iv_rank_min=Decimal(str(iv_min)))
+    screened = screen(metrics_list, criteria)[:limit]
+
+    # --- Load portfolio ---
+    try:
+        positions_raw, balances_raw = _load_portfolio_from_file(portfolio_file)
+    except (json.JSONDecodeError, Exception) as e:
+        typer.echo(json.dumps({"error": f"Invalid portfolio JSON: {e}"}))
+        raise typer.Exit(1)
+
+    portfolio = portfolio_from_positions(positions_raw, balances_raw)
+    rules = RiskRules(
+        max_position_pct=Decimal(str(max_position_pct)),
+        max_bp_usage_pct=Decimal(str(max_bp_pct)),
+        min_dte=min_dte_risk,
+    )
+
+    # --- Process each screened symbol ---
+    results = []
+    skipped = []
+    rejected = []
+    journal = Journal() if auto_journal else None
+
+    for screen_result in screened:
+        sym = screen_result.symbol
+
+        # Locate chain file
+        chain_file: Path | None = None
+        if chains_dir is not None:
+            candidate = chains_dir / f"{sym}.json"
+            if candidate.exists():
+                chain_file = candidate
+
+        if chain_file is None:
+            reason = "no chain file" if chains_dir is not None else "no chains-dir provided"
+            skipped.append({"symbol": sym, "reason": reason})
+            continue
+
+        # Load optional greeks
+        greeks_map = {}
+        if greeks_dir is not None:
+            greeks_candidate = greeks_dir / f"{sym}_greeks.json"
+            if greeks_candidate.exists():
+                try:
+                    greeks_raw = json.loads(greeks_candidate.read_text())
+                    greeks_map = parse_greeks_response(greeks_raw)
+                except (json.JSONDecodeError, Exception):
+                    pass  # greeks are optional; skip silently
+
+        # Parse chain
+        try:
+            chain_raw = json.loads(chain_file.read_text())
+        except json.JSONDecodeError as e:
+            skipped.append({"symbol": sym, "reason": f"invalid chain JSON: {e}"})
+            continue
+
+        contracts, expiration_date = parse_nested_chain(chain_raw, target_dte=dte, greeks_map=greeks_map)
+        if not contracts:
+            skipped.append({"symbol": sym, "reason": "no contracts found for target DTE"})
+            continue
+
+        # Build strategy
+        try:
+            if strategy == "short_put":
+                strategy_dict = build_short_put(
+                    contracts, sym, expiration_date or "",
+                    target_delta=Decimal(str(put_delta)),
+                )
+            elif strategy == "vertical_spread":
+                strategy_dict = build_vertical_spread(
+                    contracts, sym, expiration_date or "",
+                    option_type=OptionType.PUT,
+                    direction=Direction.BULLISH,
+                    short_delta=Decimal(str(put_delta)),
+                    long_delta=Decimal(str(long_put_delta)),
+                )
+            elif strategy == "iron_condor":
+                strategy_dict = build_iron_condor(
+                    contracts, sym, expiration_date or "",
+                    put_short_delta=Decimal(str(put_delta)),
+                    put_long_delta=Decimal(str(long_put_delta)),
+                    call_short_delta=Decimal(str(call_delta)),
+                    call_long_delta=Decimal(str(long_call_delta)),
+                )
+            elif strategy == "strangle":
+                strategy_dict = build_strangle(
+                    contracts, sym, expiration_date or "",
+                    put_delta=Decimal(str(put_delta)),
+                    call_delta=Decimal(str(call_delta)),
+                )
+        except ChainBuilderError as e:
+            skipped.append({"symbol": sym, "reason": f"build failed: {e}"})
+            continue
+
+        # Risk check
+        risk_data = strategy_dict.get("risk", {})
+        legs_data = strategy_dict.get("legs", [])
+        expiration_date_str = strategy_dict.get("expiration_date", "")
+
+        risk_profile = RiskProfile(
+            max_profit=Decimal(str(risk_data.get("max_profit", 0))),
+            max_loss=Decimal(str(risk_data.get("max_loss", 0))),
+            breakevens=[Decimal(str(b)) for b in risk_data.get("breakevens", [])],
+        )
+        legs = [
+            OrderLeg(
+                symbol=leg.get("symbol", sym),
+                action=leg.get("action", "Sell to Open"),
+                quantity=int(leg.get("quantity", 1)),
+                option_type=leg.get("option_type"),
+                strike_price=leg.get("strike_price"),
+                expiration_date=leg.get("expiration_date", expiration_date_str),
+            )
+            for leg in legs_data
+        ]
+        risk_result = check_trade(risk_profile, legs, portfolio, rules)
+
+        # Journal if approved and --auto-journal
+        journal_id: int | None = None
+        if risk_result.approved and auto_journal and journal is not None:
+            credit_val = strategy_dict.get("credit") or 0.0
+            entry = _journal_from_strategy(strategy_dict, float(credit_val), rationale)
+            if entry is not None:
+                logged = journal.log_trade(entry)
+                journal_id = logged.id
+
+        screen_entry = {
+            "score": float(screen_result.score),
+            "iv_rank": float(screen_result.metrics.iv_rank),
+            "reasons": screen_result.reasons,
+        }
+        risk_entry = {
+            "approved": risk_result.approved,
+            "violations": risk_result.violations,
+            "warnings": risk_result.warnings,
+        }
+
+        record = {
+            "symbol": sym,
+            "screen": screen_entry,
+            "strategy": strategy_dict,
+            "risk": risk_entry,
+            "journal_id": journal_id,
+        }
+
+        if risk_result.approved:
+            results.append(record)
+        else:
+            rejected.append({"symbol": sym, "risk": risk_entry})
+
+    output = {
+        "screened": len(screened),
+        "built": len(results) + len(rejected),
+        "approved": len(results),
+        "results": results,
+        "skipped": skipped,
+        "rejected": rejected,
+    }
+    typer.echo(json.dumps(output, indent=2))
+
+
 if __name__ == "__main__":
     app()

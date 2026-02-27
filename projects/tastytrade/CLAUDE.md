@@ -64,12 +64,13 @@ uv run tt-strategy risk-check portfolio.json --max-loss 3000 --max-profit 1500
 - Screener with IV rank filtering
 - Risk validation against portfolio rules
 - Trade journal (SQLite, with rich analytics)
-- Full test coverage (135 tests)
+- Full test coverage (151 tests)
 
 ### Integration
-- Works with market-agent for signal generation
+- Works with market-agent for signal generation (`pipeline.py volatility --json`)
 - Claude orchestrates MCP calls to tasty-agent
 - Journal agent: log trades, query stats, close positions (all JSON output)
+- `tt-strategy pipeline` chains all four steps from pre-fetched data files
 
 ## Screener Agent
 
@@ -311,6 +312,92 @@ Output shapes:
 - `open` / `history`: `{"count": N, "trades": [...]}`
 - `stats`: `{"open_trades", "closed_trades", "total_pnl", "winners", "losers", "win_rate", "avg_pnl", "max_win", "max_loss", "by_strategy": {...}, "by_underlying": {...}}`
 - `close`: `{"closed": true, "trade_id": N, "underlying", "entry_price", "exit_price", "pnl", "status"}`
+
+## Full Pipeline
+
+End-to-end workflow from market-agent signals through tastytrade execution.
+
+### Live MCP Workflow
+
+```
+STEP 1: market-agent (optional)
+  cd projects/market-agent
+  uv run python scripts/pipeline.py volatility --json
+  # → {"symbols": ["TSLA", "NVDA", ...], "recommendations": [...]}
+
+STEP 2: Screen
+  MCP get_market_metrics(symbols=["TSLA", "NVDA", ...]) → save to /tmp/metrics.json
+  uv run tt-strategy screen-agent --iv-min 0.30 --limit 5 --input /tmp/metrics.json
+
+STEP 3: Build (per symbol)
+  MCP get_option_chain(symbol="TSLA", nested=True) → /tmp/chains/TSLA.json
+  MCP get_greeks(symbols=[...candidate OCC symbols...]) → /tmp/greeks/TSLA_greeks.json
+  uv run tt-strategy build-strategy iron_condor --chain /tmp/chains/TSLA.json \
+    --greeks /tmp/greeks/TSLA_greeks.json --dte 45
+
+STEP 4: Risk check
+  MCP get_positions + get_balances → /tmp/portfolio.json
+  uv run tt-strategy risk-agent /tmp/portfolio.json --strategy /tmp/strategy.json
+
+STEP 5: Journal + execute
+  uv run tt-strategy journal-log --credit 1.85 --strategy /tmp/strategy.json
+  MCP place_order(dry_run=True) → review
+  MCP place_order(dry_run=False) → execute
+
+SHORTCUT — run all local steps in one command with pre-fetched files:
+  uv run tt-strategy pipeline \
+    --metrics /tmp/metrics.json \
+    --portfolio /tmp/portfolio.json \
+    --chains-dir /tmp/chains/ \
+    --greeks-dir /tmp/greeks/ \
+    --strategy iron_condor --dte 45 \
+    --limit 5 \
+    --auto-journal \
+    --rationale "High IV, neutral"
+```
+
+### `tt-strategy pipeline` flags
+
+| Flag | Default | Description |
+|---|---|---|
+| `--metrics` | required | JSON from MCP `get_market_metrics` |
+| `--portfolio` | required | JSON from MCP `get_positions` + `get_balances` |
+| `--chains-dir` | none | Dir containing `{SYMBOL}.json` chain files |
+| `--greeks-dir` | none | Dir containing `{SYMBOL}_greeks.json` files |
+| `--strategy` | `iron_condor` | `short_put`, `vertical_spread`, `iron_condor`, `strangle` |
+| `--dte` | `45` | Target days to expiration |
+| `--put-delta` | `0.30` | Short put delta |
+| `--call-delta` | `0.30` | Short call delta |
+| `--long-put-delta` | `0.16` | Long put wing delta |
+| `--long-call-delta` | `0.16` | Long call wing delta |
+| `--iv-min` | `0.30` | Min IV rank for screening |
+| `--limit` | `5` | Max symbols to build strategies for |
+| `--auto-journal` | off | Log all approved trades |
+| `--rationale` | `""` | Rationale string stored in journal |
+| `--max-position-pct` | `0.05` | Max loss as fraction of NLV |
+| `--max-bp-pct` | `0.50` | Max buying power usage fraction |
+| `--min-dte` | `7` | Minimum DTE for risk check |
+
+### Output JSON
+
+```json
+{
+  "screened": 5,
+  "built": 3,
+  "approved": 2,
+  "results": [
+    {
+      "symbol": "SPY",
+      "screen": {"score": 85.2, "iv_rank": 0.72, "reasons": [...]},
+      "strategy": {"strategy_type": "iron_condor", "credit": 1.85, "summary": "...", ...},
+      "risk": {"approved": true, "violations": [], "checks": {...}},
+      "journal_id": 42
+    }
+  ],
+  "skipped": [{"symbol": "AAPL", "reason": "no chain file"}],
+  "rejected": [{"symbol": "TSLA", "risk": {"approved": false, "violations": [...]}}]
+}
+```
 
 ## Roadmap
 

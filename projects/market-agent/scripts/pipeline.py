@@ -9,6 +9,7 @@ Usage:
     uv run python scripts/pipeline.py watchlist my_list   # scan a saved watchlist
 """
 
+import json
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -20,6 +21,13 @@ from rich.panel import Panel
 from rich.table import Table
 
 from market_agent import validate_symbol
+from market_agent.analysis.institutional import (
+    format_institutional_summary,
+    get_metals_context,
+    institutional_bias,
+    is_metals_ticker,
+    ticker_to_commodity,
+)
 from market_agent.analysis.screener import (
     CRYPTO_MAJORS,
     HIGH_IV_NAMES,
@@ -221,6 +229,27 @@ def deep_dive(symbol: str):
     if sig:
         recs.append(recommend_from_volatility(screen_result, sig))
 
+    # Institutional context for metals tickers
+    if is_metals_ticker(symbol):
+        commodity = ticker_to_commodity(symbol)
+        if commodity:
+            console.print(f"\n[bold]Institutional Context ({commodity})[/]")
+            try:
+                ctx = get_metals_context(weeks=52)
+                cot = ctx["cot"].get(commodity)
+                comex = ctx["comex"].get(commodity.lower())
+                bias_info = institutional_bias(commodity, cot, comex)
+                console.print(f"  Bias: [bold]{bias_info['bias']}[/]")
+                console.print(f"  Confidence adj: {bias_info['confidence_adj']:.2f}")
+                console.print(f"  {bias_info['rationale']}")
+
+                # Adjust recommendation confidence based on institutional bias
+                for rec in recs:
+                    rec.confidence = min(1.0, rec.confidence * bias_info["confidence_adj"])
+            except Exception as e:
+                console.print(f"  [dim]Institutional data unavailable: {e}[/]")
+            console.print()
+
     if recs:
         print_recommendations(f"Recommendations for {symbol}", recs)
     else:
@@ -237,23 +266,51 @@ def deep_dive(symbol: str):
     save_watchlist(wl)
 
 
-def main():
-    mode = sys.argv[1] if len(sys.argv) > 1 else "all"
+def _recs_to_json(recs: list[Recommendation], strategy: str, symbols: list[str]) -> dict:
+    """Convert recommendations to structured JSON for pipeline consumption."""
+    return {
+        "scan_date": datetime.now().strftime("%Y-%m-%d"),
+        "strategy": strategy,
+        "symbols": symbols,
+        "recommendations": [
+            {
+                "symbol": rec.symbol,
+                "action": rec.action,
+                "confidence": round(rec.confidence, 4),
+                "options_strategy": rec.options_strategy.to_dict() if rec.options_strategy else None,
+                "rationale": rec.rationale,
+                "entry_price": float(rec.entry_price) if rec.entry_price else None,
+                "stop_loss": float(rec.stop_loss) if rec.stop_loss else None,
+                "take_profit": float(rec.take_profit) if rec.take_profit else None,
+                "risk_reward": rec.risk_reward,
+                "position_size_pct": rec.position_size_pct,
+            }
+            for rec in recs
+        ],
+    }
 
-    console.print(Panel(
-        f"[bold]Market Analysis Pipeline[/]\n"
-        f"[dim]{datetime.now().strftime('%Y-%m-%d %H:%M')}[/]",
-        style="blue",
-    ))
+
+def main():
+    args = sys.argv[1:]
+    json_mode = "--json" in args
+    args = [a for a in args if a != "--json"]
+    mode = args[0] if args else "all"
+
+    if not json_mode:
+        console.print(Panel(
+            f"[bold]Market Analysis Pipeline[/]\n"
+            f"[dim]{datetime.now().strftime('%Y-%m-%d %H:%M')}[/]",
+            style="blue",
+        ))
 
     all_recs = []
 
-    if mode == "symbol" and len(sys.argv) > 2:
-        deep_dive(validate_symbol(sys.argv[2]))
+    if mode == "symbol" and len(args) > 1:
+        deep_dive(validate_symbol(args[1]))
         return
 
-    if mode == "watchlist" and len(sys.argv) > 2:
-        wl_name = sys.argv[2]
+    if mode == "watchlist" and len(args) > 1:
+        wl_name = args[1]
         wl = load_watchlist(wl_name)
         if not wl:
             console.print(f"[red]Watchlist '{wl_name}' not found[/]")
@@ -280,6 +337,12 @@ def main():
         all_recs.extend(recs)
 
     if mode in ("volatility", "premium", "all"):
+        if json_mode and mode in ("volatility", "premium"):
+            recs = run_volatility_pipeline(HIGH_IV_NAMES)
+            sell_premium = [r for r in recs if r.action == "sell_premium"]
+            out = _recs_to_json(sell_premium, "volatility", HIGH_IV_NAMES)
+            print(json.dumps(out, indent=2))
+            return
         console.print("[bold]Volatility / premium selling scan...[/]")
         recs = run_volatility_pipeline(HIGH_IV_NAMES)
         print_recommendations("Premium Selling — Options", recs)
@@ -304,6 +367,21 @@ def main():
         print_recommendations("Crypto Momentum", recs)
         all_recs.extend(recs)
 
+    # Institutional context if any metals in recommendations
+    metals_in_recs = {
+        ticker_to_commodity(r.symbol)
+        for r in all_recs
+        if is_metals_ticker(r.symbol)
+    }
+    metals_in_recs.discard(None)
+    if metals_in_recs:
+        try:
+            ctx = get_metals_context(weeks=52)
+            summary_md = format_institutional_summary(ctx)
+            console.print(Panel(summary_md, title="Institutional Flow", style="magenta"))
+        except Exception:
+            pass
+
     # Summary
     if all_recs:
         console.print(Panel(
@@ -324,7 +402,7 @@ def main():
 
 
 if __name__ == "__main__":
-    if len(sys.argv) > 1 and sys.argv[1] == "--help":
+    if "--help" in sys.argv:
         console.print(__doc__)
         sys.exit(0)
     main()
