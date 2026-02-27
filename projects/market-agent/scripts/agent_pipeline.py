@@ -51,7 +51,8 @@ def print_org_chart() -> None:
     analysis.add("black_scholes.py   BS price, delta, gamma, theta, vega, IV solver")
     analysis.add("vol_regime.py      VIX classification, term structure, IVx")
     analysis.add("options.py         IV rank, skew, strike selection (BS delta)")
-    analysis.add("kelly.py           Kelly Criterion → position size multiplier")
+    analysis.add("kelly.py           Kelly Criterion + ATR-normalized position sizing")
+    analysis.add("sectors.py         50-symbol sector map, 30% BP cap per sector")
     analysis.add("technical.py       15 indicators (SMA, RSI, MACD, BB, ATR…)")
     analysis.add("screener.py        Momentum, reversion, volatility screens")
 
@@ -71,6 +72,7 @@ def print_org_chart() -> None:
     r2 = pipeline.add("[bold]2. TradeArchitect[/bold]   [dim]agents/architect.py[/dim]")
     r2.add("Reads: state.regime, state.scan_symbols")
     r2.add("Logic: regime → playbook (LOW=calendars, NORMAL=strangles, HIGH=jade lizards)")
+    r2.add("Sizing: ATR-normalized (low-vol → larger, high-vol → smaller) | 45 DTE target")
     r2.add("Writes: state.proposals  {symbol, strategy, legs, position_size_pct}")
 
     r3 = pipeline.add("[bold]3. TradeEvaluator[/bold]   [dim]agents/evaluator.py[/dim]  [yellow](--eval)[/yellow]")
@@ -80,7 +82,9 @@ def print_org_chart() -> None:
     r3.add("Writes: proposal.eval_stats  {win_rate, avg_dit, sample_size, sharpe}")
 
     r4 = pipeline.add("[bold]4. RiskMonitor[/bold]      [dim]agents/risk_monitor.py[/dim]")
-    r4.add("Entry: risk_score = f(BP_impact, correlation, regime_fit, IVR)")
+    r4.add("Entry: risk_score = f(BP_impact 30%, sector_corr 20%, regime 25%, IVR 10%, heat 15%)")
+    r4.add("Sector: 30% max BP per sector (broad/tech/metals/energy/rates…)")
+    r4.add("Heat: portfolio delta >25% net liq → WARN | theta >1%/day → WARN")
     r4.add("In-trade: ROLL at 21 DTE | CLOSE at 2× credit | ADJUST delta breach")
     r4.add("Writes: proposal.risk_score, state.alerts")
 
@@ -92,7 +96,10 @@ def print_org_chart() -> None:
     r5.add("Writes: state.proposals (appends madman=True proposals)")
 
     r6 = pipeline.add("[bold]6. Orchestrator[/bold]     [dim]agents/orchestrator.py[/dim]")
-    r6.add("Constraints: BP ≤ 50%, max 15 positions, max 3 per symbol")
+    r6cb = r6.add("[bold red]Circuit Breakers[/bold red]  (hard limits, no override)")
+    r6cb.add("VIX > 40 → halve all position sizes")
+    r6cb.add("Portfolio delta > 25% net liq → block all new proposals")
+    r6.add("Constraints: BP ≤ 50%, max 15 positions, max 3 per symbol, sector ≤ 30%")
     r6.add("Filters: risk_score > 0.80 rejected, size > 5% rejected")
     r6.add("Output: state.proposals (final, filtered)")
 
@@ -110,8 +117,8 @@ def print_org_chart() -> None:
     console.print(root)
     console.print()
     console.print(
-        "[dim]Position sizing: regime defaults × Kelly multiplier (0.5×–1.5×) | "
-        "Madman hard cap: 0.10–0.20%[/dim]"
+        "[dim]Position sizing: regime defaults × ATR scalar × Kelly multiplier (0.5×–1.5×) | "
+        "Madman hard cap: 0.10–0.20% | Sector cap: 30% BP per bucket[/dim]"
     )
 
 
