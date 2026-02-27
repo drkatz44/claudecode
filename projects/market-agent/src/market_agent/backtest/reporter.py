@@ -24,6 +24,7 @@ def generate_report(
     results: dict[str, BacktestResult],
     walk_forward: Optional[dict[str, dict]] = None,
     chart_paths: Optional[dict[str, Path]] = None,
+    institutional_context: Optional[str] = None,
 ) -> str:
     """Generate a markdown report comparing strategy backtests.
 
@@ -32,6 +33,7 @@ def generate_report(
         results: Dict mapping strategy_name -> BacktestResult
         walk_forward: Optional dict mapping strategy_name -> walk-forward results
         chart_paths: Optional dict mapping strategy_name -> chart file path
+        institutional_context: Optional markdown string with institutional flow data
 
     Returns:
         Markdown string.
@@ -105,6 +107,11 @@ def generate_report(
         lines.append("")
         for name, path in chart_paths.items():
             lines.append(f"- **{name}**: `{path}`")
+        lines.append("")
+
+    # Institutional context
+    if institutional_context:
+        lines.append(institutional_context)
         lines.append("")
 
     # Last 10 trades for best strategy

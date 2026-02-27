@@ -49,10 +49,18 @@ class ScanConfig(BaseModel):
         return max(0.0, min(1.0, v))
 
 
+class DataSourcesConfig(BaseModel):
+    """Toggle external data sources on/off."""
+    cot: bool = True
+    comex: bool = True
+    usgs: bool = False
+
+
 class MarketAgentConfig(BaseModel):
     """Top-level configuration."""
     scan: ScanConfig = ScanConfig()
     reports_dir: str = str(Path.home() / ".market-agent" / "reports")
+    data_sources: DataSourcesConfig = DataSourcesConfig()
 
 
 def load_config() -> MarketAgentConfig:
@@ -84,6 +92,11 @@ def save_default_config() -> Path:
             "min_confidence": config.scan.min_confidence,
         },
         "reports_dir": config.reports_dir,
+        "data_sources": {
+            "cot": config.data_sources.cot,
+            "comex": config.data_sources.comex,
+            "usgs": config.data_sources.usgs,
+        },
     }
 
     CONFIG_PATH.write_text(yaml.dump(data, default_flow_style=False), encoding="utf-8")
