@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 # VIX futures front-month proxy (VX1) — yfinance ticker
 VIX_TICKER = "^VIX"
 VIX_FUTURES_PROXY = "^VIX"  # yfinance doesn't have VX futures; use VIX as proxy
+VVIX_TICKER = "^VVIX"        # Volatility of VIX — meta-filter for entry timing
 
 
 class RegimeDetector:
@@ -26,11 +27,18 @@ class RegimeDetector:
     """
 
     def run(self, state: PortfolioState) -> PortfolioState:
-        """Fetch VIX, compute regime, and update state."""
+        """Fetch VIX + VVIX, compute regime, and update state."""
         bars = get_bars(VIX_TICKER, period="6mo", interval="1d")
         if not bars or len(bars) < 30:
             logger.warning("Insufficient VIX data for regime detection")
             return state
+
+        # VVIX — volatility of VIX, used as a meta-filter in architect
+        try:
+            vvix_bars = get_bars(VVIX_TICKER, period="1mo", interval="1d")
+            vvix_level = float(vvix_bars[-1].close) if vvix_bars else 0.0
+        except Exception:
+            vvix_level = 0.0
 
         vix_level = float(bars[-1].close)
         regime = classify_regime(vix_level)
@@ -63,11 +71,13 @@ class RegimeDetector:
             ivx=ivx,
             ivr_5d_change=ivr_5d_change,
             vix_term_structure=term,
+            vvix_level=vvix_level,
         )
 
+        vvix_str = f" | VVIX: {vvix_level:.0f}" if vvix_level > 0 else ""
         logger.info(
-            "Regime: %s | VIX: %.1f | IVR: %.1f | IVx: %.1f%% | Term: %s",
-            regime.value, vix_level, ivr, ivx, term,
+            "Regime: %s | VIX: %.1f | IVR: %.1f | IVx: %.1f%% | Term: %s%s",
+            regime.value, vix_level, ivr, ivx, term, vvix_str,
         )
 
         return state

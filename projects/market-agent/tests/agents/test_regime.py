@@ -92,3 +92,4 @@ class TestRegimeDetector:
         assert 0 <= state.regime.ivr <= 100
         assert state.regime.vix_term_structure in ("contango", "backwardation", "flat")
         assert isinstance(state.regime.vix_5d_change, float)
+        assert state.regime.vvix_level >= 0  # 0.0 when unavailable, positive when fetched

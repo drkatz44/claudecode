@@ -145,13 +145,15 @@ def display_regime(state: PortfolioState) -> None:
 
     r = state.regime
     color = {"low": "green", "normal": "yellow", "high": "red"}[r.regime.value]
+    vvix_str = f"  VVIX: {r.vvix_level:.0f}" if r.vvix_level > 0 else ""
     console.print(Panel(
         f"[bold {color}]{r.regime.value.upper()}[/bold {color}]  "
         f"VIX: {r.vix_level:.1f}  "
         f"5d chg: {r.vix_5d_change:+.1f}%  "
         f"IVR: {r.ivr:.0f}  "
         f"IVx: {r.ivx:.1f}%  "
-        f"Term: {r.vix_term_structure}",
+        f"Term: {r.vix_term_structure}"
+        f"{vvix_str}",
         title="Regime",
     ))
 
@@ -178,6 +180,7 @@ def _display_proposal_table(proposals, title: str, style: str) -> None:
     table.add_column("Credit", justify="right")
     table.add_column("Risk", justify="right")
     table.add_column("Size %", justify="right")
+    table.add_column("HC", justify="center")
     table.add_column("Win%", justify="right")
     table.add_column("AvgDIT", justify="right")
     table.add_column("n", justify="right")
@@ -187,6 +190,7 @@ def _display_proposal_table(proposals, title: str, style: str) -> None:
         credit = f"${p.credit:.2f}" if p.credit else "-"
         risk_color = "red" if p.risk_score > 0.6 else ("yellow" if p.risk_score > 0.3 else "green")
         risk_str = f"[{risk_color}]{p.risk_score:.2f}[/{risk_color}]"
+        hc_str = "[bold green]*[/bold green]" if p.high_conviction else ""
 
         if p.eval_stats:
             win_rate = p.eval_stats.get("win_rate")
@@ -201,7 +205,7 @@ def _display_proposal_table(proposals, title: str, style: str) -> None:
         rationale = p.rationale[0] if p.rationale else ""
         table.add_row(
             p.symbol, p.strategy_type, credit, risk_str,
-            f"{p.position_size_pct:.2f}%", win_str, dit_str, str(sample),
+            f"{p.position_size_pct:.2f}%", hc_str, win_str, dit_str, str(sample),
             rationale,
         )
 

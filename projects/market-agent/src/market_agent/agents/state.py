@@ -28,6 +28,7 @@ class RegimeState(BaseModel):
     ivx: float = Field(ge=0)          # 30-day expected move
     ivr_5d_change: float = 0.0
     vix_term_structure: str = "contango"  # contango|backwardation|flat
+    vvix_level: float = 0.0           # Volatility of VIX (CBOE ^VVIX); 0 = unavailable
     timestamp: datetime = Field(default_factory=lambda: datetime.now(tz=None))
 
 
@@ -45,6 +46,7 @@ class TradeProposal(BaseModel):
     risk_score: float = Field(default=0.0, ge=0, le=1)
     eval_stats: Optional[dict] = None  # Populated by evaluator (Phase 2)
     is_madman: bool = False
+    high_conviction: bool = False      # Vol regime transition favors entry (backwardation→contango, VIX falling)
     credit: Optional[float] = None
     max_loss: Optional[float] = None
     breakevens: list[float] = Field(default_factory=list)

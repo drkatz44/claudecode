@@ -10,13 +10,24 @@ from decimal import Decimal
 from .. import validate_symbol
 from ..analysis.kelly import atr_position_size_pct
 from ..analysis.options import iv_rank, options_summary, resolve_strategy
-from ..analysis.technical import atr as compute_atr
+from ..analysis.technical import atr as compute_atr, historical_volatility as compute_hv
 from ..analysis.vol_regime import compute_ivx
 from ..data.fetcher import get_bars
 from ..data.futures import ETF_UNIVERSE, FUTURES_UNIVERSE, is_futures
-from .state import PortfolioState, TradeProposal, VolRegime
+from .state import PortfolioState, RegimeState, TradeProposal, VolRegime
 
 logger = logging.getLogger(__name__)
+
+# IV/RV spread: minimum premium of implied over 20-day realized vol (pct points)
+# Replaces IVR > 50 hard gate — measures actual variance risk premium, not relative rank
+IV_RV_MIN_SPREAD = 3.0
+
+# VVIX: when vol-of-vol is this elevated the timing of any VIX move is too uncertain
+VVIX_SUPPRESS_THRESHOLD = 125.0
+
+# High-conviction flag: VIX must still be elevated enough to have premium worth selling
+HIGH_CONVICTION_MIN_VIX = 18.0
+
 
 # Regime → strategy mapping with BP limits and position sizing
 REGIME_PLAYBOOK: dict[VolRegime, dict] = {
@@ -24,7 +35,6 @@ REGIME_PLAYBOOK: dict[VolRegime, dict] = {
         "strategies": ["calendar", "diagonal", "vertical_spread", "bwb"],
         "bp_limit_pct": 40.0,
         "position_size_pct": 1.5,
-        "min_ivr": 15,
         "delta_target": 0.20,
         "dte_range": (30, 60),
         "profit_target_pct": 50.0,
@@ -34,7 +44,6 @@ REGIME_PLAYBOOK: dict[VolRegime, dict] = {
         "strategies": ["strangle", "iron_condor", "vertical_spread", "jade_lizard"],
         "bp_limit_pct": 50.0,
         "position_size_pct": 2.0,
-        "min_ivr": 25,
         "delta_target": 0.16,
         "dte_range": (38, 52),  # TastyTrade empirical data: 45 DTE midpoint is optimal
         "profit_target_pct": 50.0,
@@ -44,7 +53,6 @@ REGIME_PLAYBOOK: dict[VolRegime, dict] = {
         "strategies": ["strangle", "jade_lizard", "back_ratio", "bwb"],
         "bp_limit_pct": 50.0,
         "position_size_pct": 2.5,
-        "min_ivr": 25,
         "delta_target": 0.20,  # Wider strikes in high vol
         "dte_range": (30, 60),
         "profit_target_pct": 50.0,
@@ -73,6 +81,32 @@ class TradeArchitect:
         playbook = REGIME_PLAYBOOK[regime]
         symbols = state.scan_symbols or self._default_universe()
 
+        # --- Entry suppression gates ---
+        # Backwardation + rising VIX = selling into accelerating fear — worst possible entry
+        if (state.regime.vix_term_structure == "backwardation"
+                and state.regime.vix_5d_change > 0):
+            state.alerts.append(
+                f"WARN: Backwardation + rising VIX ({state.regime.vix_5d_change:+.1f}% 5d) "
+                "— suppressing proposals (worst entry conditions)"
+            )
+            logger.warning(
+                "Proposal suppression: backwardation + rising VIX (%.1f%%)",
+                state.regime.vix_5d_change,
+            )
+            return state
+
+        # VVIX meta-filter: when vol-of-vol is extreme, even the direction of VIX is uncertain
+        if state.regime.vvix_level > VVIX_SUPPRESS_THRESHOLD:
+            state.alerts.append(
+                f"WARN: VVIX {state.regime.vvix_level:.0f} > {VVIX_SUPPRESS_THRESHOLD:.0f} "
+                "— vol-of-vol too elevated, suppressing proposals"
+            )
+            logger.warning("Proposal suppression: VVIX %.0f", state.regime.vvix_level)
+            return state
+
+        # High-conviction flag: vol regime transitioning favourably
+        high_conviction = self._is_high_conviction(state.regime)
+
         proposals: list[TradeProposal] = []
 
         for symbol in symbols:
@@ -85,6 +119,7 @@ class TradeArchitect:
             try:
                 proposal = self._evaluate_symbol(symbol, regime, playbook)
                 if proposal:
+                    proposal.high_conviction = high_conviction
                     proposals.append(proposal)
             except (ValueError, KeyError, TypeError):
                 logger.exception("Error evaluating %s", symbol)
@@ -114,8 +149,17 @@ class TradeArchitect:
             return None
 
         ivr = summary["iv_rank"]
-        if ivr < playbook["min_ivr"]:
-            return None  # IV too low for premium selling
+
+        # IV/RV spread: actual variance risk premium — measures the edge, not relative history
+        current_iv = summary.get("current_iv", 0.0) or 0.0
+        if current_iv <= 0:
+            return None
+        hv_series = compute_hv(bars, period=20)
+        hv_valid = hv_series.dropna()
+        realized_vol_pct = float(hv_valid.iloc[-1]) * 100 if not hv_valid.empty else 0.0
+        iv_rv_spread = current_iv - realized_vol_pct
+        if iv_rv_spread < IV_RV_MIN_SPREAD:
+            return None  # No meaningful variance risk premium — edge is not there
 
         underlying_price = Decimal(str(summary["underlying_price"]))
         ivx = compute_ivx(bars)
@@ -146,7 +190,7 @@ class TradeArchitect:
 
             rationale = [
                 playbook["rationale_prefix"],
-                f"IVR: {ivr:.0f} (min {playbook['min_ivr']})",
+                f"IVR: {ivr:.0f} | IV/RV spread: {iv_rv_spread:.1f}pts",
                 f"IVx: {ivx:.1f}%",
                 f"VIX: {regime.value}",
             ]
@@ -170,6 +214,19 @@ class TradeArchitect:
             )
 
         return None
+
+    def _is_high_conviction(self, regime: RegimeState) -> bool:
+        """Return True when vol regime is transitioning favorably for short-vol entry.
+
+        High conviction = contango/flat term structure + VIX falling + enough premium.
+        This is the backwardation→contango recovery signal: fear is subsiding but IV
+        is still elevated enough to sell.
+        """
+        return (
+            regime.vix_term_structure in ("contango", "flat")
+            and regime.vix_5d_change < 0
+            and regime.vix_level >= HIGH_CONVICTION_MIN_VIX
+        )
 
     def _default_universe(self) -> list[str]:
         """Return the default scanning universe (ETFs only — futures need special handling)."""
