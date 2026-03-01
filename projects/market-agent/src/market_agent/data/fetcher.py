@@ -150,10 +150,12 @@ def get_quote(symbol: str) -> Optional[Quote]:
 
 
 def get_fundamentals(symbol: str) -> Optional[Fundamentals]:
-    """Fetch company fundamentals."""
+    """Fetch company fundamentals. Returns None for ETFs and crypto."""
     ticker = yf.Ticker(symbol)
     info = ticker.info
     if not info or "symbol" not in info:
+        return None
+    if info.get("quoteType") in ("ETF", "CRYPTOCURRENCY"):
         return None
 
     cal = ticker.calendar

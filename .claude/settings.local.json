@@ -2,7 +2,51 @@
   "permissions": {
     "allow": [
       "WebSearch",
-      "Bash(gh:*)"
+      "Bash(gh:*)",
+      "Bash(pandoc:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:developer.tastytrade.com)",
+      "Bash(uv run:*)",
+      "Bash(uv pip install:*)",
+      "Bash(uv sync:*)",
+      "Bash(PYTHONPATH=src .venv/bin/python:*)",
+      "Bash(tree:*)",
+      "WebFetch(domain:www.well-labs.com)",
+      "WebFetch(domain:well-labs.com)",
+      "Bash(curl:*)",
+      "Bash(python:*)",
+      "Bash(.venv/bin/python:*)",
+      "Bash(ls:*)",
+      "Bash(open \"https://www.shaws.com/account/sign-in.html\")",
+      "Bash(grep:*)",
+      "Bash(git log:*)",
+      "Bash(git status:*)",
+      "Bash(wc:*)",
+      "Bash(git -C /Users/drk/Code/claudecode add projects/market-agent/CLAUDE.md projects/market-agent/pyproject.toml projects/market-agent/uv.lock projects/market-agent/scripts/backtest.py projects/market-agent/scripts/pipeline.py projects/market-agent/scripts/report.py projects/market-agent/scripts/scheduled_scan.py projects/market-agent/src/market_agent/backtest/engine.py projects/market-agent/src/market_agent/backtest/reporter.py projects/market-agent/src/market_agent/data/fetcher.py projects/market-agent/src/market_agent/data/config.py projects/market-agent/src/market_agent/signals/recommender.py projects/market-agent/src/market_agent/analysis/options.py projects/market-agent/src/market_agent/analysis/charts.py projects/market-agent/launchd/ projects/market-agent/tests/test_options.py projects/market-agent/tests/test_charts.py projects/market-agent/tests/test_reporter.py projects/market-agent/tests/test_config.py projects/market-agent/tests/test_scheduled_scan.py)",
+      "mcp__polygon__get_snapshot_all",
+      "mcp__polygon__list_ticker_news",
+      "Bash(/Users/drk/Code/claudecode/scripts/project-status.sh:*)",
+      "Bash(/Users/drk/Code/claudecode/scripts/project-search.sh:*)",
+      "Bash(/Users/drk/bin/cc:*)",
+      "Bash(chmod:*)",
+      "Bash(xargs:*)",
+      "WebFetch(domain:api.tastyworks.com)",
+      "Bash(gh api:*)",
+      "Bash(bash /Users/drk/Code/claudecode/projects/market-agent/scripts/market-scan.sh:*)",
+      "Bash(git diff:*)",
+      "Bash(mkdir:*)",
+      "Bash(cp:*)",
+      "Bash(jq:*)",
+      "Bash(which:*)",
+      "WebFetch(domain:www.youtube.com)"
     ]
-  }
+  },
+  "enableAllProjectMcpServers": false,
+  "enabledMcpjsonServers": [
+    "tastytrade",
+    "polygon"
+  ]
 }

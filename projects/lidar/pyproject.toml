@@ -1,0 +1,41 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "lidar"
+version = "0.1.0"
+description = "LIDAR-based residential density analysis for Green Hill Pond, RI"
+requires-python = ">=3.11"
+dependencies = [
+    "pdal>=3.0",
+    "numpy>=1.26",
+    "scipy>=1.11",
+    "scikit-learn>=1.3",
+    "geopandas>=0.14",
+    "shapely>=2.0",
+    "pyproj>=3.6",
+    "rasterio>=1.3",
+    "pysheds<0.3",  # 0.3+ requires numba/llvmlite (fails on Python 3.12)
+    "folium>=0.15",
+    "requests>=2.31",
+    "typer>=0.9",
+    "rich>=13.0",
+]
+
+[project.scripts]
+lidar = "lidar.cli:app"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/lidar"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.2",
+]

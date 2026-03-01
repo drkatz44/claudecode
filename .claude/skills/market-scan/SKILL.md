@@ -15,7 +15,7 @@ argument-hint: "[symbol TICKER | momentum | volatility | reversion | sectors | c
 
 ## Live Pipeline Output
 
-!`cd /Users/drk/Code/claudecode/projects/market-agent && ARGS="${ARGUMENTS:-all}"; case "$ARGS" in backtest*) SYMBOL=$(echo $ARGS | awk '{print $2}'); uv run python scripts/backtest.py ${SYMBOL:-SPY} 2>&1 | head -120 ;; *) uv run python scripts/pipeline.py $ARGS 2>&1 | head -200 ;; esac`
+!`bash /Users/drk/Code/claudecode/projects/market-agent/scripts/market-scan.sh "$ARGUMENTS"`
 
 ---
 

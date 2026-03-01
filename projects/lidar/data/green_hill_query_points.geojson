@@ -1,0 +1,59 @@
+{
+  "type": "FeatureCollection",
+  "crs": {
+    "type": "name",
+    "properties": {"name": "urn:ogc:def:crs:OGC:1.3:CRS84"}
+  },
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {"label": "pond_center", "notes": "Approximate center of Green Hill Pond"},
+      "geometry": {"type": "Point", "coordinates": [-71.6156, 41.3707]}
+    },
+    {
+      "type": "Feature",
+      "properties": {"label": "north_shore", "notes": "Northern shoreline near Route 1"},
+      "geometry": {"type": "Point", "coordinates": [-71.6156, 41.3770]}
+    },
+    {
+      "type": "Feature",
+      "properties": {"label": "south_shore", "notes": "Southern shoreline"},
+      "geometry": {"type": "Point", "coordinates": [-71.6156, 41.3645]}
+    },
+    {
+      "type": "Feature",
+      "properties": {"label": "east_shore", "notes": "Eastern shoreline, Charlestown side"},
+      "geometry": {"type": "Point", "coordinates": [-71.6040, 41.3707]}
+    },
+    {
+      "type": "Feature",
+      "properties": {"label": "west_shore", "notes": "Western shoreline near residential area"},
+      "geometry": {"type": "Point", "coordinates": [-71.6270, 41.3707]}
+    },
+    {
+      "type": "Feature",
+      "properties": {"label": "nw_residential", "notes": "NW corner — residential neighborhood, high-density"},
+      "geometry": {"type": "Point", "coordinates": [-71.6240, 41.3760]}
+    },
+    {
+      "type": "Feature",
+      "properties": {"label": "sw_residential", "notes": "SW — mixed residential, closer to Route 1"},
+      "geometry": {"type": "Point", "coordinates": [-71.6230, 41.3660]}
+    },
+    {
+      "type": "Feature",
+      "properties": {"label": "inlet_north", "notes": "Northern inlet — potential groundwater discharge zone"},
+      "geometry": {"type": "Point", "coordinates": [-71.6110, 41.3780]}
+    },
+    {
+      "type": "Feature",
+      "properties": {"label": "outlet_south", "notes": "Southern outlet channel — salt pond connection"},
+      "geometry": {"type": "Point", "coordinates": [-71.6090, 41.3640]}
+    },
+    {
+      "type": "Feature",
+      "properties": {"label": "east_residential", "notes": "East-side residential cluster, Charlestown"},
+      "geometry": {"type": "Point", "coordinates": [-71.5990, 41.3720]}
+    }
+  ]
+}
