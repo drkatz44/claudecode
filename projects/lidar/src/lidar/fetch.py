@@ -85,7 +85,9 @@ def fetch_point_cloud(
         if cached is not None:
             return cached
 
-    class_filter = "|".join(f"Classification[{c}:{c}]" for c in classes)
+    # Use a single range covering min..max class — pipe-separated syntax not
+    # supported in all PDAL versions. Caller filters specific classes in memory.
+    class_filter = f"Classification[{min(classes)}:{max(classes)}]"
 
     pipeline_def = {
         "pipeline": [
